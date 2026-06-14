@@ -46,7 +46,7 @@
                     <span class="font-black text-3xl tracking-tighter uppercase">TNKSND</span>
                 </div>
 
-                <div class="hidden lg:flex space-x-6 xl:space-x-10">
+                <div class="hidden xl:flex space-x-6 xl:space-x-8">
                     <a href="#expertise" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
                         <span class="ja-content">専門知識</span>
                         <span class="en-content">Expertise</span>
@@ -54,6 +54,10 @@
                     <a href="#projects" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
                         <span class="ja-content">実績</span>
                         <span class="en-content">Projects</span>
+                    </a>
+                    <a href="#journal" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                        <span class="ja-content">ジャーナル</span>
+                        <span class="en-content">Journal</span>
                     </a>
                     <a href="#services" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
                         <span class="ja-content">サービス</span>
@@ -79,7 +83,7 @@
                         <span class="en-content">Switch to JAPANESE</span>
                     </button>
 
-                    <div class="lg:hidden flex items-center ml-2">
+                    <div class="xl:hidden flex items-center ml-2">
                         <button id="mobile-menu-btn" class="text-black focus:outline-none p-2" aria-label="Toggle Menu">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -90,7 +94,7 @@
             </div>
         </div>
 
-        <div id="mobile-menu" class="hidden lg:hidden bg-[#f5f4f0] border-t border-black absolute w-full left-0 shadow-xl">
+        <div id="mobile-menu" class="hidden xl:hidden bg-[#f5f4f0] border-t border-black absolute w-full left-0 shadow-xl">
             <div class="px-4 pt-2 pb-6 space-y-1 text-center">
                 <a href="#expertise" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4 border-b border-black border-opacity-10">
                     <span class="ja-content">専門知識</span>
@@ -99,6 +103,10 @@
                 <a href="#projects" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4 border-b border-black border-opacity-10">
                     <span class="ja-content">実績</span>
                     <span class="en-content">Projects</span>
+                </a>
+                <a href="#journal" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4 border-b border-black border-opacity-10">
+                    <span class="ja-content">ジャーナル</span>
+                    <span class="en-content">Journal</span>
                 </a>
                 <a href="#services" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4 border-b border-black border-opacity-10">
                     <span class="ja-content">サービス</span>
@@ -143,7 +151,6 @@
         </div>
     </section>
 
-    <!-- CORE EXPERTISE SECTION -->
     <section id="expertise" class="py-20 md:py-24 border-t border-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-12 md:mb-16">
@@ -188,7 +195,6 @@
         </div>
     </section>
 
-    <!-- EXAMPLE PROJECTS SECTION -->
     <section id="projects" class="py-20 md:py-24 border-t border-black bg-[#f5f4f0]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-12 md:mb-16">
@@ -203,7 +209,6 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Project 1 -->
                 <div class="border border-black group overflow-hidden bg-white">
                     <div class="h-48 bg-black overflow-hidden relative">
                         <img src="https://placehold.co/600x400/111111/f5f4f0?text=ANC+Headphones" alt="ANC Headphones" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100 mix-blend-luminosity">
@@ -220,7 +225,6 @@
                     </div>
                 </div>
 
-                <!-- Project 2 -->
                 <div class="border border-black group overflow-hidden bg-white">
                     <div class="h-48 bg-black overflow-hidden relative">
                         <img src="https://placehold.co/600x400/111111/f5f4f0?text=Smart+Speakers" alt="Smart Speakers" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100 mix-blend-luminosity">
@@ -237,7 +241,6 @@
                     </div>
                 </div>
 
-                <!-- Project 3 -->
                 <div class="border border-black group overflow-hidden bg-white">
                     <div class="h-48 bg-black overflow-hidden relative">
                         <img src="https://placehold.co/600x400/111111/f5f4f0?text=AR+Glasses" alt="AR Glasses" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100 mix-blend-luminosity">
@@ -254,7 +257,6 @@
                     </div>
                 </div>
 
-                <!-- Project 4 -->
                 <div class="border border-black group overflow-hidden bg-white">
                     <div class="h-48 bg-black overflow-hidden relative">
                         <img src="https://placehold.co/600x400/111111/f5f4f0?text=Humanoid+Robotics" alt="Humanoid Robotics" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100 mix-blend-luminosity">
@@ -274,8 +276,80 @@
         </div>
     </section>
 
-    <!-- SERVICES SECTION (NEW) -->
-    <section id="services" class="py-20 md:py-24 border-t border-black">
+    <section id="journal" class="py-20 md:py-24 border-t border-black bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between text-center md:text-left">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter">
+                        <span class="ja-content">ジャーナル</span>
+                        <span class="en-content">Journal</span>
+                    </h2>
+                    <p class="mt-2 text-sm font-light opacity-70">
+                        <span class="ja-content">音響工学の舞台裏、日々のインスピレーション、思考の断片。</span>
+                        <span class="en-content">Behind the scenes of audio engineering, daily inspirations, and technical insights.</span>
+                    </p>
+                </div>
+                <div class="mt-4 md:mt-0">
+                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-xs font-bold uppercase tracking-widest border border-black px-4 py-2 hover:bg-black hover:text-[#f5f4f0] transition-colors">
+                        <span>FOLLOW ON INSTAGRAM</span>
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="block aspect-square relative bg-black border border-black overflow-hidden group">
+                    <img src="https://placehold.co/600x600/222222/f5f4f0?text=Studio+Acoustics" alt="Instagram Post" class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-500 mix-blend-luminosity group-hover:scale-105">
+                    <div class="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#f5f4f0]">
+                        <p class="text-xs font-mono mb-1">@TNKSND</p>
+                        <p class="text-xs font-light line-clamp-3">
+                            <span class="ja-content">スタジオ音響の測定。完璧な拡散を求めて。</span>
+                            <span class="en-content">Measuring studio acoustics. Chasing the perfect diffusion.</span>
+                        </p>
+                    </div>
+                </a>
+
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="block aspect-square relative bg-black border border-black overflow-hidden group">
+                    <img src="https://placehold.co/600x600/333333/f5f4f0?text=Microphone+Capsule" alt="Instagram Post" class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-500 mix-blend-luminosity group-hover:scale-105">
+                    <div class="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#f5f4f0]">
+                        <p class="text-xs font-mono mb-1">@TNKSND</p>
+                        <p class="text-xs font-light line-clamp-3">
+                            <span class="ja-content">超小型マイクカプセルのマテリアル研究。</span>
+                            <span class="en-content">Material research on ultra-miniature microphone capsules.</span>
+                        </p>
+                    </div>
+                </a>
+
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="block aspect-square relative bg-black border border-black overflow-hidden group">
+                    <img src="https://placehold.co/600x600/111111/f5f4f0?text=Textbook+Draft" alt="Instagram Post" class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-500 mix-blend-luminosity group-hover:scale-105">
+                    <div class="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#f5f4f0]">
+                        <p class="text-xs font-mono mb-1">@TNKSND</p>
+                        <p class="text-xs font-light line-clamp-3">
+                            <span class="ja-content">音響学テキストの今週のドラフトを執筆中。</span>
+                            <span class="en-content">Writing this week's draft for the acoustics textbook.</span>
+                        </p>
+                    </div>
+                </a>
+
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="block aspect-square relative bg-black border border-black overflow-hidden group">
+                    <img src="https://placehold.co/600x600/444444/f5f4f0?text=Seattle+Sound" alt="Instagram Post" class="w-full h-full object-cover opacity-80 group-hover:opacity-40 transition-all duration-500 mix-blend-luminosity group-hover:scale-105">
+                    <div class="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[#f5f4f0]">
+                        <p class="text-xs font-mono mb-1">@TNKSND</p>
+                        <p class="text-xs font-light line-clamp-3">
+                            <span class="ja-content">フィールドレコーディング、シアトル近郊の音の風景。</span>
+                            <span class="en-content">Field recording, catching the soundscape near Seattle.</span>
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="py-20 md:py-24 border-t border-black bg-[#f5f4f0]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-12 md:mb-16">
                 <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter text-center md:text-left">
@@ -285,8 +359,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                <!-- Tech Consulting -->
-                <div class="border border-black p-8 md:p-10 hover:bg-black hover:text-[#f5f4f0] transition-colors group">
+                <div class="border border-black p-8 md:p-10 hover:bg-black hover:text-[#f5f4f0] transition-colors group bg-white">
                     <h3 class="text-xl md:text-2xl font-bold mb-4 uppercase tracking-tight">
                         <span class="ja-content">技術コンサルティング</span>
                         <span class="en-content">Technical Consulting</span>
@@ -297,8 +370,7 @@
                     </p>
                 </div>
 
-                <!-- Recording -->
-                <div class="border border-black p-8 md:p-10 hover:bg-black hover:text-[#f5f4f0] transition-colors group">
+                <div class="border border-black p-8 md:p-10 hover:bg-black hover:text-[#f5f4f0] transition-colors group bg-white">
                     <h3 class="text-xl md:text-2xl font-bold mb-4 uppercase tracking-tight">
                         <span class="ja-content">レコーディング支援</span>
                         <span class="en-content">Recording & Production</span>
@@ -309,8 +381,7 @@
                     </p>
                 </div>
 
-                <!-- Coaching -->
-                <div class="border border-black p-8 md:p-10 hover:bg-black hover:text-[#f5f4f0] transition-colors group">
+                <div class="border border-black p-8 md:p-10 hover:bg-black hover:text-[#f5f4f0] transition-colors group bg-white">
                     <h3 class="text-xl md:text-2xl font-bold mb-4 uppercase tracking-tight">
                         <span class="ja-content">リーダーシップコーチング</span>
                         <span class="en-content">Leadership Coaching</span>
@@ -324,7 +395,6 @@
         </div>
     </section>
 
-    <!-- PATENTS SECTION -->
     <section id="patents" class="py-20 md:py-24 border-t border-black bg-black text-[#f5f4f0]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-12 md:mb-16 flex flex-col md:flex-row md:items-end justify-between text-center md:text-left">
@@ -591,7 +661,6 @@
         </div>
     </section>
 
-    <!-- BACKGROUND SECTION -->
     <section id="about" class="py-20 md:py-24 border-t border-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row gap-10 md:gap-16">
@@ -637,12 +706,11 @@
         </div>
     </section>
 
-    <!-- CONTACT SECTION -->
     <section id="contact" class="py-24 md:py-32 border-t border-black bg-[#e0ded8]">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-6 md:mb-8">
-                <span class="ja-content">新たなプロジェクトに向けて!</span>
-                <span class="en-content">Initiate a Partnership!</span>
+                <span class="ja-content">新たなプロジェクトに向けて</span>
+                <span class="en-content">Initiate a Partnership.</span>
             </h2>
             <p class="font-light text-lg md:text-xl mb-10 md:mb-12">
                 <span class="ja-content">日米を跨ぐオーダーメイドの技術コンサルティング、レコーディング支援、そしてエグゼクティブコーチングについて、お気軽にお問い合わせください。</span>
