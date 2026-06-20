@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TNKSND | Acoustics 101</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Noto+Sans+JP:wght@300;400;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #f5f4f0;
+            color: #000000;
+        }
+
+        .concentric-circles {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            pointer-events: none;
+        }
+
+        /* Language Toggle Logic */
+        .ja-content { display: block; }
+        .en-content { display: none; }
+        span.ja-content { display: inline; }
+        span.en-content { display: none; }
+
+        .show-en .ja-content { display: none; }
+        .show-en .en-content { display: block; }
+        .show-en span.ja-content { display: none; }
+        .show-en span.en-content { display: inline; }
+
+        /* Custom Slider for TNKSND */
+        input[type=range] { -webkit-appearance: none; appearance: none; height: 2px; background: #000; outline: none; width: 100%; margin-top: 10px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 0; background: #000; cursor: pointer; border: 2px solid #C5A059; transition: background 0.2s; }
+        input[type=range]::-webkit-slider-thumb:hover { background: #C5A059; }
+        input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 0; background: #000; cursor: pointer; border: 2px solid #C5A059; transition: background 0.2s; }
+        input[type=range]::-moz-range-thumb:hover { background: #C5A059; }
+        
+        .pill { transition: all 0.2s; border: 1px solid #000; background: transparent; color: #000; }
+        .pill.active { background: #000; color: #f5f4f0; border-color: #000; }
+        .pill:hover:not(.active) { background: #e0ded8; }
+    </style>
+</head>
+<body class="antialiased selection:bg-black selection:text-[#f5f4f0]">
+
+    <!-- NAVIGATION -->
+    <nav class="bg-[#f5f4f0] border-b border-black fixed w-full z-50 top-0 pt-[env(safe-area-inset-top)]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="index.html" class="font-black text-3xl tracking-tighter uppercase">TNKSND</a>
+                </div>
+
+                <div class="hidden xl:flex space-x-6 xl:space-x-8">
+                    <a href="membership.html" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4 text-[#C5A059]">
+                        <span class="ja-content">メンバーシップ</span>
+                        <span class="en-content">Membership</span>
+                    </a>
+                    <a href="index.html#about" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                        <span class="ja-content">私たちについて</span>
+                        <span class="en-content">About Us</span>
+                    </a>
+                    <a href="index.html#services" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                        <span class="ja-content">サービス</span>
+                        <span class="en-content">Services</span>
+                    </a>
+                    <a href="index.html#journal" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                        <span class="ja-content">ジャーナル</span>
+                        <span class="en-content">Journal</span>
+                    </a>
+                    <a href="index.html#vision" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                        <span class="ja-content">ヴィジョン</span>
+                        <span class="en-content">Vision</span>
+                    </a>
+                    <a href="index.html#contact" class="text-sm font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                        <span class="ja-content">お問い合わせ</span>
+                        <span class="en-content">Contact</span>
+                    </a>
+                </div>
+
+                <div class="flex items-center">
+                    <button id="lang-toggle" class="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black px-3 py-1.5 hover:bg-black hover:text-[#f5f4f0] transition-colors ml-4 mr-2 md:mr-0">
+                        <span class="ja-content">Switch to ENGLISH</span>
+                        <span class="en-content">Switch to JAPANESE</span>
+                    </button>
+                    <div class="xl:hidden flex items-center ml-2">
+                        <button id="mobile-menu-btn" class="text-black focus:outline-none p-2">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MOBILE MENU -->
+        <div id="mobile-menu" class="hidden xl:hidden bg-[#f5f4f0] border-t border-black absolute w-full left-0 shadow-xl">
+            <div class="px-4 pt-2 pb-6 space-y-1 text-center">
+                <a href="membership.html" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4 border-b border-black border-opacity-10 text-[#C5A059]">
+                    <span class="ja-content">メンバーシップ</span>
+                    <span class="en-content">Membership</span>
+                </a>
+                <a href="index.html#about" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4 border-b border-black border-opacity-10">
+                    <span class="ja-content">私たちについて</span>
+                    <span class="en-content">About Us</span>
+                </a>
+                <a href="index.html#contact" class="mobile-link block text-lg font-bold uppercase tracking-widest py-4">
+                    <span class="ja-content">お問い合わせ</span>
+                    <span class="en-content">Contact</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="relative overflow-hidden bg-black text-[#f5f4f0] pt-40 pb-24 md:pb-32 flex items-center min-h-[70dvh]">
+        <canvas id="heroWave" class="absolute inset-0 w-full h-full opacity-70"></canvas>
+        <div class="relative max-w-6xl mx-auto px-5 text-center z-10">
+            <p class="font-bold uppercase tracking-widest text-[#C5A059] text-sm mb-4">Acoustics 101</p>
+            <h1 class="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter leading-tight md:leading-none mb-6">
+                <span class="ja-content">音を視る。<br />物理学に触れる。</span>
+                <span class="en-content">See The Sound.<br />Touch The Physics.</span>
+            </h1>
+            <p class="mt-8 text-base md:text-lg max-w-2xl mx-auto font-light opacity-90 px-4">
+                <span class="ja-content">すべての音は空気の振動にすぎません。インターフェースを操作し、音響エンジニアや科学者が日々活用している「音の基礎」を体験してください。</span>
+                <span class="en-content">Every sound is just vibrating air. Interact with the modules below to discover the fundamental physics that audio engineers use every day.</span>
+            </p>
+            <div class="mt-12">
+                <a href="#tone" class="inline-block border-2 border-[#C5A059] bg-[#C5A059] text-black px-8 py-4 font-bold uppercase tracking-widest hover:bg-transparent hover:text-[#C5A059] transition-colors">
+                    <span class="ja-content">探索を始める</span>
+                    <span class="en-content">Start Exploring</span>
+                </a>
+            </div>
+            <p class="mt-6 text-xs text-gray-500 uppercase tracking-widest">
+                <span class="ja-content">※ 音が出ます。デバイスの音量を調整してください。</span>
+                <span class="en-content">* Turn on your volume. These experiments generate real audio.</span>
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-5 py-24 space-y-32">
+
+        <!-- EXPERIMENT 1: PITCH & LOUDNESS -->
+        <section id="tone" class="scroll-mt-32">
+            <div class="mb-10 text-center md:text-left border-b border-black pb-6">
+                <span class="text-[#C5A059] font-bold uppercase tracking-widest text-xs">Module 01</span>
+                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter mt-2">
+                    <span class="ja-content">周波数と振幅</span>
+                    <span class="en-content">Pitch & Loudness</span>
+                </h2>
+                <p class="text-gray-600 font-light mt-4 max-w-3xl text-sm md:text-base">
+                    <span class="ja-content">音波は2つの要素で構成されています。「周波数（Frequency）」は音の高低を、「振幅（Amplitude）」は音の大きさを決定します。</span>
+                    <span class="en-content">A sound wave relies on two basic ingredients. Frequency decides the pitch (high/low), and Amplitude decides the loudness.</span>
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center bg-white border border-black p-8 md:p-12">
+                <div class="space-y-8">
+                    <button id="tonePlay" class="w-full py-4 border border-black bg-black text-[#f5f4f0] font-bold uppercase tracking-widest hover:bg-[#f5f4f0] hover:text-black transition-colors">
+                        ▶ PLAY TONE
+                    </button>
+                    <div>
+                        <div class="flex justify-between mb-2 text-sm font-bold uppercase tracking-widest">
+                            <label><span class="ja-content">周波数 (Frequency)</span><span class="en-content">Frequency</span></label>
+                            <span class="text-[#C5A059]"><span id="v_freq">440</span> HZ · <span id="v_note">A4</span></span>
+                        </div>
+                        <input id="freq" type="range" min="80" max="2000" step="1" value="440">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-2 text-sm font-bold uppercase tracking-widest">
+                            <label><span class="ja-content">振幅 (Amplitude)</span><span class="en-content">Amplitude</span></label>
+                            <span class="text-[#C5A059]"><span id="v_vol">50</span>%</span>
+                        </div>
+                        <input id="vol" type="range" min="0" max="100" step="1" value="50">
+                    </div>
+                </div>
+                <div class="bg-black border border-black p-4 relative">
+                    <canvas id="toneScope" class="w-full" style="height:240px"></canvas>
+                    <p class="absolute bottom-2 left-0 right-0 text-center text-gray-500 text-[10px] uppercase tracking-widest font-bold">Oscilloscope</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPERIMENT 2: HARMONICS -->
+        <section id="harmonics" class="scroll-mt-32">
+            <div class="mb-10 text-center md:text-left border-b border-black pb-6">
+                <span class="text-[#C5A059] font-bold uppercase tracking-widest text-xs">Module 02</span>
+                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter mt-2">
+                    <span class="ja-content">倍音と音色</span>
+                    <span class="en-content">Timbre & Harmonics</span>
+                </h2>
+                <p class="text-gray-600 font-light mt-4 max-w-3xl text-sm md:text-base">
+                    <span class="ja-content">なぜピアノとギターは同じ「ド」の音でも違って聞こえるのでしょうか？ 現実の音は、基本の音に複数の「倍音（Harmonics）」が重なって作られています。</span>
+                    <span class="en-content">Why does a piano sound different from a guitar playing the same note? Real sounds are built by stacking multiple harmonics on top of a fundamental frequency.</span>
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-start bg-[#e0ded8] border border-black p-8 md:p-12">
+                <div class="space-y-6">
+                    <button id="harmPlay" class="w-full py-4 border border-black bg-black text-[#f5f4f0] font-bold uppercase tracking-widest hover:bg-[#f5f4f0] hover:text-black transition-colors">
+                        ▶ PLAY SOUND
+                    </button>
+                    <div class="flex gap-2 flex-wrap mb-6">
+                        <button data-hpreset="sine" class="hpreset pill px-4 py-2 text-xs font-bold uppercase tracking-widest active">Pure</button>
+                        <button data-hpreset="square" class="hpreset pill px-4 py-2 text-xs font-bold uppercase tracking-widest">Square</button>
+                        <button data-hpreset="saw" class="hpreset pill px-4 py-2 text-xs font-bold uppercase tracking-widest">Saw</button>
+                        <button data-hpreset="organ" class="hpreset pill px-4 py-2 text-xs font-bold uppercase tracking-widest">Organ</button>
+                    </div>
+                    <div id="harmSliders" class="space-y-4"></div>
+                </div>
+                <div class="bg-black border border-black p-4 relative">
+                    <canvas id="harmScope" class="w-full" style="height:320px"></canvas>
+                    <p class="absolute bottom-2 left-0 right-0 text-center text-gray-500 text-[10px] uppercase tracking-widest font-bold">Combined Waveform</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPERIMENT 3: BEATS -->
+        <section id="beats" class="scroll-mt-32">
+            <div class="mb-10 text-center md:text-left border-b border-black pb-6">
+                <span class="text-[#C5A059] font-bold uppercase tracking-widest text-xs">Module 03</span>
+                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter mt-2">
+                    <span class="ja-content">うなり（干渉）</span>
+                    <span class="en-content">Wave Interference</span>
+                </h2>
+                <p class="text-gray-600 font-light mt-4 max-w-3xl text-sm md:text-base">
+                    <span class="ja-content">ごくわずかに異なる2つの周波数を同時に鳴らすと、波が干渉し合い、音量が周期的に変化する「うなり（Beats）」が生じます。</span>
+                    <span class="en-content">Play two notes that are almost identical, and their waves will interfere, creating a pulsing volume effect known as "beats."</span>
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center bg-white border border-black p-8 md:p-12">
+                <div class="space-y-8">
+                    <button id="beatPlay" class="w-full py-4 border border-black bg-black text-[#f5f4f0] font-bold uppercase tracking-widest hover:bg-[#f5f4f0] hover:text-black transition-colors">
+                        ▶ PLAY TONES
+                    </button>
+                    <div>
+                        <div class="flex justify-between mb-2 text-sm font-bold uppercase tracking-widest">
+                            <label>Tone 01</label><span class="text-[#C5A059]"><span id="v_b1">440</span> HZ</span>
+                        </div>
+                        <input id="b1" type="range" min="200" max="600" step="1" value="440">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-2 text-sm font-bold uppercase tracking-widest">
+                            <label>Tone 02</label><span class="text-[#C5A059]"><span id="v_b2">444</span> HZ</span>
+                        </div>
+                        <input id="b2" type="range" min="200" max="600" step="1" value="444">
+                    </div>
+                    <div class="border border-black p-4 text-center font-mono text-sm">
+                        <span id="beatRate" class="text-xl font-bold">4</span> BEATS / SEC
+                    </div>
+                </div>
+                <div class="bg-black border border-black p-4 relative">
+                    <canvas id="beatScope" class="w-full" style="height:240px"></canvas>
+                    <p class="absolute bottom-2 left-0 right-0 text-center text-gray-500 text-[10px] uppercase tracking-widest font-bold">Amplitude Envelope</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPERIMENT 4: SPECTRUM (MIC) -->
+        <section id="spectrum" class="scroll-mt-32">
+            <div class="mb-10 text-center md:text-left border-b border-black pb-6">
+                <span class="text-[#C5A059] font-bold uppercase tracking-widest text-xs">Module 04</span>
+                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter mt-2">
+                    <span class="ja-content">スペクトラム解析</span>
+                    <span class="en-content">Spectrum Analysis</span>
+                </h2>
+                <p class="text-gray-600 font-light mt-4 max-w-3xl text-sm md:text-base">
+                    <span class="ja-content">マイクをオンにして、自分の声や周囲の音の周波数分布をリアルタイムで視覚化します。データはブラウザ内でのみ処理されます。</span>
+                    <span class="en-content">Turn on your microphone to visualize the frequency distribution of your voice in real time. Audio processing remains strictly in your browser.</span>
+                </p>
+            </div>
+
+            <div class="bg-[#e0ded8] border border-black p-8 md:p-12">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <button id="micBtn" class="py-4 px-8 border border-black bg-black text-[#f5f4f0] font-bold uppercase tracking-widest hover:bg-transparent hover:text-black transition-colors w-full md:w-auto text-sm">
+                        🎤 ENABLE MIC
+                    </button>
+                    <div class="text-right">
+                        <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Peak Frequency</p>
+                        <p class="font-mono text-xl font-bold text-[#C5A059]"><span id="micPeak">—</span></p>
+                    </div>
+                </div>
+                <div class="bg-black border border-black p-4 relative">
+                    <canvas id="specCanvas" class="w-full" style="height:280px"></canvas>
+                    <p class="absolute bottom-2 left-0 right-0 text-center text-gray-500 text-[10px] uppercase tracking-widest font-bold">Frequency Spectrum (FFT)</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-black pt-12 pb-[max(2.5rem,env(safe-area-inset-bottom))] px-4 text-center text-[#f5f4f0]">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 border-b border-white border-opacity-20 pb-8 mb-8">
+            <div class="font-black text-2xl tracking-tighter uppercase">TNKSND</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-gray-400">
+                Acoustics 101 Educational Module
+            </div>
+        </div>
+        <p class="text-[10px] font-bold uppercase tracking-widest opacity-60">
+            &copy; 2026 TNKSND.
+            <span class="ja-content">無断複写・転載を禁じます。</span>
+            <span class="en-content">All rights reserved.</span>
+        </p>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script>
+        const $ = id => document.getElementById(id);
+        let actx = null;
+        function ctx() { if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume(); return actx; }
+
+        function noteName(f){ 
+            if(f <= 0) return '–'; 
+            const n = Math.round(12 * Math.log2(f / 440));
+            const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            const idx = ((n + 9) % 12 + 12) % 12; 
+            const oct = 4 + Math.floor((n + 9) / 12); 
+            return names[idx] + oct; 
+        }
+
+        // Scope Drawer (TNKSND Gold Style)
+        function scope(canvas, analyser, color) {
+            const c = canvas.getContext('2d'); 
+            const dpr = window.devicePixelRatio || 1;
+            const W = canvas.clientWidth, H = canvas.clientHeight; 
+            canvas.width = W * dpr; canvas.height = H * dpr; 
+            c.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const buf = new Uint8Array(analyser.fftSize); 
+            analyser.getByteTimeDomainData(buf);
+            
+            c.clearRect(0, 0, W, H);
+            
+            // Minimal Grid
+            c.strokeStyle = 'rgba(255, 255, 255, 0.1)'; c.lineWidth = 1;
+            c.beginPath(); c.moveTo(0, H/2); c.lineTo(W, H/2); c.stroke();
+
+            // Wave
+            c.beginPath(); c.lineWidth = 2; c.strokeStyle = color;
+            for(let i=0; i<buf.length; i++) { 
+                const x = i / buf.length * W; 
+                const y = (buf[i] / 128 - 1) * H * 0.4 + H/2; 
+                i === 0 ? c.moveTo(x, y) : c.lineTo(x, y); 
+            }
+            c.stroke();
+        }
+
+        // EXP 1: Tone
+        const tone = {osc:null, gain:null, ana:null, on:false, raf:0};
+        function toneUpdate(){ 
+            $('v_freq').textContent = $('freq').value; 
+            $('v_note').textContent = noteName(+$('freq').value);
+            $('v_vol').textContent = $('vol').value;
+            if(tone.on){ 
+                tone.osc.frequency.setTargetAtTime(+$('freq').value, ctx().currentTime, 0.01);
+                tone.gain.gain.setTargetAtTime(+$('vol').value / 100 * 0.35, ctx().currentTime, 0.02); 
+            } 
+        }
+        $('tonePlay').onclick = () => { 
+            const a = ctx();
+            if(tone.on){ 
+                tone.osc.stop(); cancelAnimationFrame(tone.raf); tone.on = false; 
+                $('tonePlay').textContent = '▶ PLAY TONE'; 
+                return; 
+            }
+            tone.osc = a.createOscillator(); tone.gain = a.createGain(); tone.ana = a.createAnalyser(); tone.ana.fftSize = 2048;
+            tone.osc.type = 'sine'; tone.osc.frequency.value = +$('freq').value; tone.gain.gain.value = +$('vol').value / 100 * 0.35;
+            tone.osc.connect(tone.gain); tone.gain.connect(tone.ana); tone.ana.connect(a.destination); tone.osc.start();
+            tone.on = true; $('tonePlay').textContent = '⏸ STOP';
+            (function loop(){ scope($('toneScope'), tone.ana, '#C5A059'); tone.raf = requestAnimationFrame(loop); })();
+        };
+        $('freq').oninput = toneUpdate; $('vol').oninput = toneUpdate; toneUpdate();
+
+        // EXP 2: Harmonics
+        const NH = 6; const harm = {osc:null, gain:null, ana:null, on:false, raf:0, amps:[1,0,0,0,0,0]};
+        const hWrap = $('harmSliders');
+        for(let i=0; i<NH; i++){ 
+            const row = document.createElement('div');
+            row.innerHTML = `<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-1"><span>H${i+1}</span><span class="text-[#C5A059]" id="ha${i}">${i===0?100:0}%</span></div><input id="hs${i}" type="range" min="0" max="100" value="${i===0?100:0}">`;
+            hWrap.appendChild(row); 
+        }
+        function buildWave(){ 
+            const real = new Float32Array(NH+1), imag = new Float32Array(NH+1);
+            for(let i=0; i<NH; i++){ imag[i+1] = harm.amps[i]; } 
+            return ctx().createPeriodicWave(real, imag, {disableNormalization:false}); 
+        }
+        function harmRead(){ 
+            for(let i=0; i<NH; i++){ harm.amps[i] = +$('hs'+i).value / 100; $('ha'+i).textContent = $('hs'+i).value+'%'; }
+            if(harm.on){ harm.osc.setPeriodicWave(buildWave()); } 
+        }
+        for(let i=0; i<NH; i++) $('hs'+i).oninput = harmRead;
+        $('harmPlay').onclick = () => { 
+            const a = ctx();
+            if(harm.on){ 
+                harm.osc.stop(); cancelAnimationFrame(harm.raf); harm.on = false; 
+                $('harmPlay').textContent = '▶ PLAY SOUND'; return; 
+            }
+            harm.osc = a.createOscillator(); harm.gain = a.createGain(); harm.ana = a.createAnalyser(); harm.ana.fftSize = 2048;
+            harm.osc.setPeriodicWave(buildWave()); harm.osc.frequency.value = 220; harm.gain.gain.value = 0.3;
+            harm.osc.connect(harm.gain); harm.gain.connect(harm.ana); harm.ana.connect(a.destination); harm.osc.start();
+            harm.on = true; $('harmPlay').textContent = '⏸ STOP';
+            (function loop(){ scope($('harmScope'), harm.ana, '#f5f4f0'); harm.raf = requestAnimationFrame(loop); })();
+        };
+        const HPRES = { sine:[100,0,0,0,0,0], square:[100,0,33,0,20,0], saw:[100,50,33,25,20,16], organ:[100,0,70,0,40,30] };
+        document.querySelectorAll('.hpreset').forEach(b => b.onclick = () => {
+            const p = HPRES[b.dataset.hpreset]; 
+            for(let i=0; i<NH; i++){ $('hs'+i).value = p[i]; }
+            document.querySelectorAll('.hpreset').forEach(x => x.classList.remove('active')); 
+            b.classList.add('active'); 
+            harmRead(); 
+        });
+        harmRead();
+
+        // EXP 3: Beats
+        const beat = {o1:null, o2:null, g:null, ana:null, on:false, raf:0};
+        function beatRead(){ 
+            $('v_b1').textContent = $('b1').value; $('v_b2').textContent = $('b2').value;
+            $('beatRate').textContent = Math.abs($('b1').value - $('b2').value);
+            if(beat.on){ 
+                beat.o1.frequency.setTargetAtTime(+$('b1').value, ctx().currentTime, 0.01);
+                beat.o2.frequency.setTargetAtTime(+$('b2').value, ctx().currentTime, 0.01); 
+            } 
+        }
+        $('b1').oninput = beatRead; $('b2').oninput = beatRead;
+        $('beatPlay').onclick = () => { 
+            const a = ctx();
+            if(beat.on){ 
+                beat.o1.stop(); beat.o2.stop(); cancelAnimationFrame(beat.raf); beat.on = false; 
+                $('beatPlay').textContent = '▶ PLAY TONES'; return; 
+            }
+            beat.o1 = a.createOscillator(); beat.o2 = a.createOscillator(); beat.g = a.createGain(); beat.ana = a.createAnalyser(); beat.ana.fftSize = 4096;
+            beat.o1.frequency.value = +$('b1').value; beat.o2.frequency.value = +$('b2').value; beat.g.gain.value = 0.22;
+            beat.o1.connect(beat.g); beat.o2.connect(beat.g); beat.g.connect(beat.ana); beat.ana.connect(a.destination);
+            beat.o1.start(); beat.o2.start(); beat.on = true; $('beatPlay').textContent = '⏸ STOP';
+            (function loop(){ scope($('beatScope'), beat.ana, '#C5A059'); beat.raf = requestAnimationFrame(loop); })();
+        };
+        beatRead();
+
+        // EXP 4: Spectrum
+        const mic = {ana:null, on:false, raf:0, stream:null};
+        $('micBtn').onclick = async () => {
+            if(mic.on){ 
+                mic.stream.getTracks().forEach(t => t.stop()); cancelAnimationFrame(mic.raf); mic.on = false; 
+                $('micBtn').textContent = '🎤 ENABLE MIC'; $('micPeak').textContent = '—'; return; 
+            }
+            try { 
+                const a = ctx(); mic.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+                const src = a.createMediaStreamSource(mic.stream); mic.ana = a.createAnalyser(); mic.ana.fftSize = 4096; src.connect(mic.ana);
+                mic.on = true; $('micBtn').textContent = '⏹ DISABLE MIC';
+                
+                const cv = $('specCanvas'), c = cv.getContext('2d'); 
+                const bins = mic.ana.frequencyBinCount; const data = new Uint8Array(bins);
+                const nyq = a.sampleRate / 2; const maxHz = 5000; const showBins = Math.floor(bins * maxHz / nyq);
+                
+                (function loop(){ 
+                    mic.ana.getByteFrequencyData(data);
+                    const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; 
+                    cv.width = W * dpr; cv.height = H * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    c.clearRect(0, 0, W, H);
+                    
+                    let peak = 0, peakI = 0;
+                    for(let i=0; i<showBins; i++){ if(data[i] > peak){ peak = data[i]; peakI = i; } }
+                    
+                    for(let i=0; i<showBins; i++){ 
+                        const x = i / showBins * W; const bw = (W / showBins) + 1; const h = (data[i] / 255) * H;
+                        // TNKSND Gold/White gradient mapped to amplitude
+                        const lum = 40 + (data[i]/255)*60;
+                        c.fillStyle = `hsl(43, 44%, ${lum}%)`;
+                        c.fillRect(x, H - h, bw, h); 
+                    }
+                    if(peak > 60){ const hz = peakI * nyq / bins; $('micPeak').textContent = Math.round(hz) + ' HZ'; }
+                    mic.raf = requestAnimationFrame(loop); 
+                })();
+            } catch(e){ alert('Microphone access blocked.'); }
+        };
+
+        // Hero Background Animation (TNKSND Style)
+        (function hero(){ 
+            const cv = $('heroWave'), c = cv.getContext('2d'); let t = 0;
+            (function loop(){ 
+                const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; 
+                cv.width = W * dpr; cv.height = H * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+                c.clearRect(0, 0, W, H);
+                // Gold, Gray, White layers
+                const layers = [['#C5A059', 0.6, 1.5, 40], ['#888888', 0.2, 2.2, 55], ['#ffffff', 0.3, 3.1, 30]];
+                layers.forEach(([col, a, fr, amp], k) => { 
+                    c.globalAlpha = a; c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath();
+                    for(let x=0; x<=W; x+=4){ 
+                        const y = H/2 + Math.sin(x/W * fr * Math.PI*2 + t*(1+k*0.4)) * amp + Math.sin(x/120+t)*10; 
+                        x===0 ? c.moveTo(x, y) : c.lineTo(x, y);
+                    } 
+                    c.stroke(); 
+                });
+                c.globalAlpha = 1; t += 0.02; requestAnimationFrame(loop); 
+            })();
+        })();
+
+        // Language Toggle Logic
+        const langToggleBtn = document.getElementById('lang-toggle');
+        const htmlTag = document.documentElement;
+
+        langToggleBtn.addEventListener('click', () => {
+            htmlTag.classList.toggle('show-en');
+            htmlTag.setAttribute('lang', htmlTag.classList.contains('show-en') ? 'en' : 'ja');
+        });
+    </script>
+</body>
+</html>
