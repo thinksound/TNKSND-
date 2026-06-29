@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instructions · Multiplicative (Hippioid) Beamforming Reality-Check</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{ background:#0b1020; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  .eq{ background:#0b1020; border:1px solid #1f2937; border-left:3px solid #6366f1; border-radius:8px; padding:10px 14px; font-family:ui-monospace,Menlo,monospace; font-size:13px; color:#c7d2fe; overflow-x:auto; }
+  code.k{ font-family:ui-monospace,Menlo,monospace; background:#0f172a; border:1px solid #1e293b; border-radius:5px; padding:1px 5px; color:#c7d2fe; }
+  h2{ scroll-margin-top:24px; }
+  a.tocy:hover{ color:#a5b4fc; }
+  body.lang-en [lang=ja]{ display:none; }
+  body.lang-ja [lang=en]{ display:none; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen lang-en">
+<div class="max-w-[920px] mx-auto px-4 py-8">
+
+  <header class="mb-8 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">
+        <span lang="en">📖 Instructions &amp; Guide</span><span lang="ja">📖 説明とガイド</span></h1>
+      <p class="text-slate-400 text-sm mt-1">
+        <span lang="en">Multiplicative (Hippioid) Beamforming — Reality-Check Simulator.</span>
+        <span lang="ja">乗算型（ヒッポイド）ビームフォーミング — 現実検証シミュレータ。</span></p>
+    </div>
+    <div class="shrink-0 flex items-center gap-2">
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button>
+        <button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button>
+      </div>
+      <a href="multiplicative-beamforming.html" class="px-3 py-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium">
+        <span lang="en">▶ Open simulator</span><span lang="ja">▶ シミュレータを開く</span></a>
+    </div>
+  </header>
+
+  <!-- ============================ ENGLISH ============================ -->
+  <div lang="en">
+  <nav class="card rounded-xl p-4 mb-8 text-sm">
+    <div class="text-slate-400 uppercase tracking-wide text-[11px] mb-2">Contents</div>
+    <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal list-inside text-indigo-300">
+      <li><a class="tocy" href="#why">Why this tool exists</a></li>
+      <li><a class="tocy" href="#prims">Primitives &amp; hippioid products</a></li>
+      <li><a class="tocy" href="#concerns">The concerns it stress-tests</a></li>
+      <li><a class="tocy" href="#controls">Controls reference</a></li>
+      <li><a class="tocy" href="#read">Reading the outputs</a></li>
+      <li><a class="tocy" href="#exp">Experiments to run</a></li>
+      <li><a class="tocy" href="#model">Modeling &amp; honesty notes</a></li>
+    </ol>
+  </nav>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="why" class="text-xl font-semibold text-white mb-2">1 · Why this tool exists</h2>
+    <p class="text-slate-300 leading-relaxed">The A4R deck proposes 2-mic <b>multiplicative beamforming</b> — multiplying cardioid (C) and dipole (D) primitives into products like C×D⁵ to get "15-element" angular selectivity and range cues for cheap. Those claims are <b>free-field, ideal-mic, noiseless</b>. This companion lets you keep the products but switch on what actually happens in a living room: <b>mic/ATF mismatch, white-noise gain, diffuse noise, reverb &amp; reflections, a 3D array, and a side-by-side MVDR reference</b>. It is meant for exactly the "explore and experiment, then review the results" path — with the results forced onto a realistic 3D scene.</p></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="prims" class="text-xl font-semibold text-white mb-2">2 · Primitives &amp; hippioid products</h2>
+    <p class="text-slate-300">From mics 0–1 (baseline 2r):</p>
+    <div class="eq">Dipole   D = m₀ − m₁              (figure-8)<br>Cardioid C = m₀ − m₁·e^(−jωτ),  τ = 2r/c   (null at back)</div>
+    <p class="text-slate-300 mt-2">A "hippioid" is a product <code class="k">C^a × D^b</code>. Higher total order (a+b) ⇒ a narrower main lobe. Because C and D share their on-axis response, the product keeps the on-axis spectrum while sharpening direction. The simulator offers C, C×D, C×D³, C×D⁵, C³×D⁵.</p>
+    <p class="text-slate-400 text-sm mt-2"><b>Important framing:</b> a multiplicative beam is a <i>nonlinear</i> power/detection pattern — excellent for cheaply estimating <i>direction</i> (the deck's "direction path"), but it is <b>not</b> a clean linear audio estimator. The deck itself extracts audio with MVDR (its "audio path"). So compare these patterns as <i>direction detectors</i>, not as the final audio beamformer.</p></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="concerns" class="text-xl font-semibold text-white mb-2">3 · The concerns it stress-tests</h2>
+    <table class="w-full text-sm"><tbody class="divide-y divide-slate-800">
+      <tr><td class="py-2 pr-3 text-amber-300 font-semibold align-top">① ATF / mic mismatch</td><td class="py-2 text-slate-300">Gain, phase and position errors break the precise cancellation that forms the nulls. Errors <b>multiply</b> through each factor, so a high-order product is far more fragile. Raise the σ sliders and the order; the orange "with-penalties" curve and the Monte-Carlo envelope pull away from the ideal, and the nulls fill in.</td></tr>
+      <tr><td class="py-2 pr-3 text-amber-300 font-semibold align-top">② WNG vs order</td><td class="py-2 text-slate-300">The bar chart plots directivity (DI) and white-noise gain (WNG) for every order. DI climbs, but WNG <b>plummets</b> — and far worse at low frequency. For far field you must trade WNG against directivity; high-order hippioids are extremely sensitive to uncorrelated mic noise.</td></tr>
+      <tr><td class="py-2 pr-3 text-emerald-300 font-semibold align-top">③ vs MVDR</td><td class="py-2 text-slate-300">The green MVDR curve/row uses all mics and the scene covariance. Compare DI, WNG and interferer rejection. Statistics-based beamformers generally win in practice, and differential designs are hard to get right off a linear/planar array or with complex acoustics.</td></tr>
+      <tr><td class="py-2 pr-3 text-sky-300 font-semibold align-top">④ Noise, reverb, reflections</td><td class="py-2 text-slate-300">Reflections arrive from many directions and leak through the (mismatch-widened) sidelobes, plus a diffuse-noise floor — both <b>fill the nulls</b>, so the on-paper rejection is not what you measure. Compare "interferer rejection (ideal)" vs "(real)".</td></tr>
+      <tr><td class="py-2 pr-3 text-slate-200 font-semibold align-top">⑤ 3D reality</td><td class="py-2 text-slate-300">A 2-mic/planar differential beam cannot resolve elevation. Raise <b>source elevation</b>: on-axis gain drops and the pattern can't distinguish it from an in-plane source. This is why results must be judged on a true 3D array in a real scene.</td></tr>
+    </tbody></table></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="controls" class="text-xl font-semibold text-white mb-2">4 · Controls reference</h2>
+    <div class="card rounded-lg overflow-hidden"><table class="w-full text-sm">
+      <thead class="bg-slate-800/60 text-slate-300"><tr><th class="text-left p-3">Control</th><th class="text-left p-3">What it does</th></tr></thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-3 font-medium text-white">Microphone array</td><td class="p-3 text-slate-300">Tetrahedron (true 3D), square (planar), or 2-mic endfire. Multiplicative uses mics 0–1; MVDR uses all.</td></tr>
+        <tr><td class="p-3 font-medium text-white">Baseline spacing 2r</td><td class="p-3 text-slate-300">Mic separation; sets τ = 2r/c and the spatial-aliasing frequency.</td></tr>
+        <tr><td class="p-3 font-medium text-white">Frequency</td><td class="p-3 text-slate-300">Analysis frequency. WNG is dramatically worse at low f for high orders.</td></tr>
+        <tr><td class="p-3 font-medium text-white">Hippioid order</td><td class="p-3 text-slate-300">C^a × D^b — the product order.</td></tr>
+        <tr><td class="p-3 font-medium text-emerald-300">Source elevation</td><td class="p-3 text-slate-300">Off-plane angle of the source (beam axis fixed at 0°/0°). Exposes the 3D blind spot.</td></tr>
+        <tr><td class="p-3 font-medium text-rose-300">Interferer azimuth</td><td class="p-3 text-slate-300">Where the competing source sits; used for the rejection metrics.</td></tr>
+        <tr><td class="p-3 font-medium text-amber-300">Gain / phase / position σ</td><td class="p-3 text-slate-300">ATF / manufacturing mismatch spread (Monte-Carlo over many array realizations).</td></tr>
+        <tr><td class="p-3 font-medium text-sky-300">Diffuse noise floor</td><td class="p-3 text-slate-300">Spatially-white/diffuse noise level.</td></tr>
+        <tr><td class="p-3 font-medium text-sky-300">Reverb / reflections</td><td class="p-3 text-slate-300">Reflection energy that leaks through sidelobes and fills nulls; also feeds the MVDR covariance.</td></tr>
+        <tr><td class="p-3 font-medium text-white">Envelope / MVDR toggles</td><td class="p-3 text-slate-300">Show the mismatch Monte-Carlo band and the MVDR reference curve.</td></tr>
+      </tbody>
+    </table></div></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="read" class="text-xl font-semibold text-white mb-2">5 · Reading the outputs</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li><b>Polar pattern</b> — blue = ideal free-field multiplicative; orange = with all penalties (mismatch mean + noise + reverb floor); green = MVDR; shaded band = mismatch Monte-Carlo envelope. Green/red rays = source / interferer.</li>
+      <li><b>DI vs WNG bar chart</b> — across the five orders; the scissor between rising DI and falling WNG is the core trade.</li>
+      <li><b>Metrics table</b> — DI, WNG, interferer rejection (ideal &amp; real), and on-axis error, Multiplicative vs MVDR.</li>
+      <li><b>Insight line</b> — a live summary of which failure mode currently dominates.</li>
+    </ul></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="exp" class="text-xl font-semibold text-white mb-2">6 · Experiments to run</h2>
+    <ol class="list-decimal list-inside text-slate-300 space-y-2">
+      <li><b>WNG cliff:</b> set order C×D⁵, sweep frequency down to 300 Hz — WNG falls off a cliff while MVDR stays controlled.</li>
+      <li><b>Mismatch fragility:</b> put the interferer in a null, then raise phase σ from 0 to ~5°. Watch a deep null on C×D⁵ collapse far faster than on C×D.</li>
+      <li><b>Reverb fills nulls:</b> raise reverb/reflections — the "real" interferer rejection rises toward 0 dB even though the "ideal" stays deep.</li>
+      <li><b>3D blind spot:</b> raise source elevation to 40°; on-axis gain drops and the planar/2-mic beam can't separate elevation.</li>
+      <li><b>MVDR gap:</b> at high order with mismatch+reverb on, compare DI/WNG/rejection — MVDR (all mics) is the more robust extractor.</li>
+    </ol></div>
+
+  <div class="card rounded-xl p-5"><h2 id="model" class="text-xl font-semibold text-white mb-2">7 · Modeling &amp; honesty notes</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li>Narrowband, plane-wave steering; c = 343 m/s. Patterns normalized to 0 dB on-axis.</li>
+      <li>The multiplicative <b>pattern</b> is the product of primitive magnitudes (the textbook hippioid). <b>WNG</b> is a Monte-Carlo proxy on uncorrelated mic noise through that nonlinear product — read it as a trend, not a spec number.</li>
+      <li>Reverb is a simplified <b>diffuse + reflection-leakage</b> floor (not a full image-source RIR); it captures null-filling, not coloration.</li>
+      <li>MVDR uses an isotropic-diffuse + interferer + white-loading covariance — an idealized (known-R) MVDR, so it actually flatters MVDR less than a tuned real system would.</li>
+      <li>Conclusion the tool is built to support: multiplicative products are a cheap <b>direction</b> primitive, but for clean far-field extraction in noise/reverb on a 3D array, statistics-based beamforming is the robust choice — which is exactly the deck's own dual-path split.</li>
+    </ul></div>
+  </div>
+
+  <!-- ============================ 日本語 ============================ -->
+  <div lang="ja">
+  <nav class="card rounded-xl p-4 mb-8 text-sm">
+    <div class="text-slate-400 uppercase tracking-wide text-[11px] mb-2">目次</div>
+    <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal list-inside text-indigo-300">
+      <li><a class="tocy" href="#why-ja">このツールの目的</a></li>
+      <li><a class="tocy" href="#prims-ja">プリミティブとヒッポイド積</a></li>
+      <li><a class="tocy" href="#concerns-ja">検証する懸念点</a></li>
+      <li><a class="tocy" href="#controls-ja">コントロール一覧</a></li>
+      <li><a class="tocy" href="#read-ja">出力の見方</a></li>
+      <li><a class="tocy" href="#exp-ja">試すべき実験</a></li>
+      <li><a class="tocy" href="#model-ja">モデルと正直な注記</a></li>
+    </ol>
+  </nav>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="why-ja" class="text-xl font-semibold text-white mb-2">1 · このツールの目的</h2>
+    <p class="text-slate-300 leading-relaxed">A4R 資料は 2マイクの<b>乗算型ビームフォーミング</b>を提案します — カーディオイド(C)とダイポール(D)のプリミティブを C×D⁵ のような積にして、安価に「15素子」相当の角度選択性と距離手がかりを得るというものです。これらの主張は<b>自由空間・理想マイク・無雑音</b>が前提です。本コンパニオンは、その積を保ちつつ、実際のリビングで起きること — <b>マイク/ATF 不整合、白色雑音利得、拡散雑音、残響・反射、3Dアレイ、そして MVDR との並列比較</b> — をオンにできます。「自由に探求・実験し、その結果をレビューする」という流れのためのもので、結果は現実的な 3D シーン上で評価されます。</p></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="prims-ja" class="text-xl font-semibold text-white mb-2">2 · プリミティブとヒッポイド積</h2>
+    <p class="text-slate-300">マイク0–1（基線 2r）から：</p>
+    <div class="eq">ダイポール   D = m₀ − m₁              （フィギュア8）<br>カーディオイド C = m₀ − m₁·e^(−jωτ),  τ = 2r/c   （後方にヌル）</div>
+    <p class="text-slate-300 mt-2">「ヒッポイド」は積 <code class="k">C^a × D^b</code> です。総次数 (a+b) が高いほどメインローブが狭くなります。C と D はオンアクシス応答を共有するため、積はオンアクシスのスペクトルを保ちながら指向を鋭くします。シミュレータは C, C×D, C×D³, C×D⁵, C³×D⁵ を提供します。</p>
+    <p class="text-slate-400 text-sm mt-2"><b>重要な位置づけ：</b> 乗算型ビームは<i>非線形</i>のパワー/検出パターンであり、<i>方向</i>を安価に推定するには優秀（資料の「方向パス」）ですが、クリーンな線形音声推定器では<b>ありません</b>。資料自体も音声抽出には MVDR（「音声パス」）を使っています。つまりこれらのパターンは<i>方向検出器</i>として比較すべきで、最終的な音声ビームフォーマとしてではありません。</p></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="concerns-ja" class="text-xl font-semibold text-white mb-2">3 · 検証する懸念点</h2>
+    <table class="w-full text-sm"><tbody class="divide-y divide-slate-800">
+      <tr><td class="py-2 pr-3 text-amber-300 font-semibold align-top">① ATF/マイク不整合</td><td class="py-2 text-slate-300">ゲイン・位相・位置の誤差が、ヌルを形成する精密な打ち消しを壊します。誤差は各因子を通じて<b>乗算</b>されるため、高次積ははるかに脆弱です。σ と次数を上げると、橙の「ペナルティ込み」曲線とモンテカルロのエンベロープが理想から離れ、ヌルが埋まります。</td></tr>
+      <tr><td class="py-2 pr-3 text-amber-300 font-semibold align-top">② WNG と次数</td><td class="py-2 text-slate-300">棒グラフは各次数の指向性(DI)と白色雑音利得(WNG)を示します。DI は上がりますが WNG は<b>急落</b>し、低周波ではさらに悪化します。遠方界では WNG と指向性のトレードオフが必須で、高次ヒッポイドは無相関マイク雑音に極めて敏感です。</td></tr>
+      <tr><td class="py-2 pr-3 text-emerald-300 font-semibold align-top">③ MVDR との比較</td><td class="py-2 text-slate-300">緑の MVDR 曲線/行は全マイクとシーン共分散を使います。DI・WNG・干渉抑圧を比較してください。統計ベースのビームフォーマは実用で概して有利で、差動設計は線形/平面以外のアレイや複雑な音響では正しく作るのが困難です。</td></tr>
+      <tr><td class="py-2 pr-3 text-sky-300 font-semibold align-top">④ 雑音・残響・反射</td><td class="py-2 text-slate-300">反射は多方向から到来し、（不整合で広がった）サイドローブを通って漏れ、拡散雑音フロアと合わせて<b>ヌルを埋め</b>ます。そのため机上の抑圧は測定値と一致しません。「干渉抑圧（理想）」と「（現実）」を比較してください。</td></tr>
+      <tr><td class="py-2 pr-3 text-slate-200 font-semibold align-top">⑤ 3Dの現実</td><td class="py-2 text-slate-300">2マイク/平面の差動ビームは仰角を分離できません。<b>音源仰角</b>を上げると、オンアクシス利得が低下し、面内音源と区別できません。だからこそ結果は、現実シーンの真の 3D アレイ上で判断する必要があります。</td></tr>
+    </tbody></table></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="controls-ja" class="text-xl font-semibold text-white mb-2">4 · コントロール一覧</h2>
+    <div class="card rounded-lg overflow-hidden"><table class="w-full text-sm">
+      <thead class="bg-slate-800/60 text-slate-300"><tr><th class="text-left p-3">コントロール</th><th class="text-left p-3">機能</th></tr></thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-3 font-medium text-white">マイクアレイ</td><td class="p-3 text-slate-300">正四面体（真の3D）、正方形（平面）、2マイク エンドファイア。乗算型はマイク0–1、MVDR は全マイクを使用。</td></tr>
+        <tr><td class="p-3 font-medium text-white">基線間隔 2r</td><td class="p-3 text-slate-300">マイク間隔。τ = 2r/c と空間エイリアシング周波数を決めます。</td></tr>
+        <tr><td class="p-3 font-medium text-white">周波数</td><td class="p-3 text-slate-300">解析周波数。高次では低周波で WNG が劇的に悪化します。</td></tr>
+        <tr><td class="p-3 font-medium text-white">ヒッポイド次数</td><td class="p-3 text-slate-300">C^a × D^b — 積の次数。</td></tr>
+        <tr><td class="p-3 font-medium text-emerald-300">音源仰角</td><td class="p-3 text-slate-300">音源の面外角度（ビーム軸は0°/0°固定）。3Dの盲点を露呈させます。</td></tr>
+        <tr><td class="p-3 font-medium text-rose-300">干渉源の方位</td><td class="p-3 text-slate-300">競合音源の位置。抑圧指標に使用。</td></tr>
+        <tr><td class="p-3 font-medium text-amber-300">ゲイン/位相/位置 σ</td><td class="p-3 text-slate-300">ATF/製造ばらつき（多数のアレイ実現にわたるモンテカルロ）。</td></tr>
+        <tr><td class="p-3 font-medium text-sky-300">拡散雑音フロア</td><td class="p-3 text-slate-300">空間的に白色/拡散な雑音レベル。</td></tr>
+        <tr><td class="p-3 font-medium text-sky-300">残響/反射</td><td class="p-3 text-slate-300">サイドローブを通って漏れヌルを埋める反射エネルギー。MVDR の共分散にも反映。</td></tr>
+        <tr><td class="p-3 font-medium text-white">エンベロープ/MVDR 切替</td><td class="p-3 text-slate-300">不整合モンテカルロ帯と MVDR 参照曲線の表示。</td></tr>
+      </tbody>
+    </table></div></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="read-ja" class="text-xl font-semibold text-white mb-2">5 · 出力の見方</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li><b>極座標パターン</b> — 青=理想自由空間の乗算型、橙=全ペナルティ込み（不整合平均＋雑音＋残響フロア）、緑=MVDR、網掛け帯=不整合モンテカルロのエンベロープ。緑/赤の線=音源/干渉源。</li>
+      <li><b>DI vs WNG 棒グラフ</b> — 5つの次数にわたる。上がる DI と下がる WNG の「はさみ」が核心のトレードオフ。</li>
+      <li><b>指標テーブル</b> — DI、WNG、干渉抑圧（理想＆現実）、オンアクシス誤差を、乗算型 vs MVDR で。</li>
+      <li><b>解説行</b> — 現在どの破綻モードが支配的かのライブ要約。</li>
+    </ul></div>
+
+  <div class="card rounded-xl p-5 mb-5"><h2 id="exp-ja" class="text-xl font-semibold text-white mb-2">6 · 試すべき実験</h2>
+    <ol class="list-decimal list-inside text-slate-300 space-y-2">
+      <li><b>WNG の崖：</b> 次数を C×D⁵ にし、周波数を 300 Hz まで下げる — WNG が崖のように落ちる一方、MVDR は制御されたまま。</li>
+      <li><b>不整合の脆さ：</b> 干渉源をヌルに置き、位相 σ を 0 → 約5° に上げる。C×D⁵ の深いヌルが C×D よりはるかに速く崩れます。</li>
+      <li><b>残響がヌルを埋める：</b> 残響/反射を上げる — 「理想」は深いままでも「現実」の干渉抑圧が 0 dB に近づきます。</li>
+      <li><b>3Dの盲点：</b> 音源仰角を 40° に上げる — オンアクシス利得が低下し、平面/2マイクのビームは仰角を分離できません。</li>
+      <li><b>MVDR との差：</b> 高次＋不整合＋残響をオンにして DI/WNG/抑圧を比較 — MVDR（全マイク）の方が頑健な抽出器です。</li>
+    </ol></div>
+
+  <div class="card rounded-xl p-5"><h2 id="model-ja" class="text-xl font-semibold text-white mb-2">7 · モデルと正直な注記</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li>狭帯域・平面波ステアリング、c = 343 m/s。パターンはオンアクシスで 0 dB に正規化。</li>
+      <li>乗算型<b>パターン</b>はプリミティブ振幅の積（教科書的ヒッポイド）。<b>WNG</b> はその非線形積を通した無相関マイク雑音のモンテカルロ近似 — 仕様値ではなく傾向として読んでください。</li>
+      <li>残響は簡略化した<b>拡散＋反射漏れ</b>フロア（完全な画像音源 RIR ではない）で、ヌル埋まりは捉えますが音色変化は捉えません。</li>
+      <li>MVDR は等方拡散＋干渉＋白色ローディングの共分散を使う理想化（R 既知）MVDR で、実機のチューニングよりむしろ MVDR を過大評価しません。</li>
+      <li>このツールが支持する結論：乗算型積は安価な<b>方向</b>プリミティブだが、3Dアレイの雑音/残響下でクリーンな遠方界抽出を行うなら統計ベースのビームフォーミングが頑健な選択 — これはまさに資料自身のデュアルパスの分担です。</li>
+    </ul></div>
+  </div>
+
+  <div class="text-center mt-6">
+    <a href="multiplicative-beamforming.html" class="inline-block px-4 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium">
+      <span lang="en">▶ Open the simulator</span><span lang="ja">▶ シミュレータを開く</span></a>
+  </div>
+
+</div>
+
+<script>
+  const enBtn=document.getElementById('enBtn'), jaBtn=document.getElementById('jaBtn');
+  function setLang(l){
+    document.body.classList.toggle('lang-en', l==='en');
+    document.body.classList.toggle('lang-ja', l==='ja');
+    document.documentElement.lang=l;
+    enBtn.classList.toggle('bg-indigo-600',l==='en'); enBtn.classList.toggle('text-white',l==='en'); enBtn.classList.toggle('bg-slate-800',l!=='en'); enBtn.classList.toggle('text-slate-300',l!=='en');
+    jaBtn.classList.toggle('bg-indigo-600',l==='ja'); jaBtn.classList.toggle('text-white',l==='ja'); jaBtn.classList.toggle('bg-slate-800',l!=='ja'); jaBtn.classList.toggle('text-slate-300',l!=='ja');
+    try{ localStorage.setItem('mbf-lang', l); }catch(e){}
+  }
+  enBtn.addEventListener('click',()=>setLang('en'));
+  jaBtn.addEventListener('click',()=>setLang('ja'));
+  let initialLang='en';
+  try{ const s=localStorage.getItem('mbf-lang'); initialLang = s || ((navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en'); }catch(e){}
+  setLang(initialLang);
+</script>
+</body>
+</html>

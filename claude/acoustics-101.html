@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acoustics 101 — The Science of Sound</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#0f172a; }
+  html { scroll-behavior:smooth; }
+  body { font-family:'Inter',system-ui,sans-serif; color:var(--ink); }
+  h1,h2,h3,.font-display { font-family:'Poppins',sans-serif; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:6px; border-radius:9999px; background:#e2e8f0; outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:20px;height:20px;border-radius:50%; background:#6d28d9; cursor:pointer; border:3px solid #fff; box-shadow:0 1px 6px rgba(109,40,217,.45); }
+  input[type=range]::-moz-range-thumb{ width:20px;height:20px;border-radius:50%; background:#6d28d9; cursor:pointer; border:3px solid #fff; }
+  .grad-text{ background:linear-gradient(90deg,#a78bfa,#22d3ee); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .card{ background:#fff; border:1px solid #eef2f7; box-shadow:0 10px 30px -18px rgba(15,23,42,.25); }
+  .pill{ transition:all .15s; }
+  .pill.active{ background:#6d28d9; color:#fff; box-shadow:0 4px 14px -4px rgba(109,40,217,.6); }
+  body.lang-en [lang=ja]{display:none!important}
+  body.lang-ja [lang=en]{display:none!important}
+</style>
+</head>
+<body class="bg-slate-50 lang-en">
+<div style="display:flex;justify-content:flex-end;gap:6px;padding:8px 12px;font-family:system-ui,sans-serif;">
+  <button id="enBtn" onclick="setLang('en')" style="cursor:pointer;border:1px solid #8888;border-radius:6px;padding:4px 10px;font-size:12px;background:transparent;color:inherit;">EN</button>
+  <button id="jaBtn" onclick="setLang('ja')" style="cursor:pointer;border:1px solid #8888;border-radius:6px;padding:4px 10px;font-size:12px;background:transparent;color:inherit;">日本語</button>
+</div>
+
+<!-- ===== NAV ===== -->
+<nav class="sticky top-0 z-50 backdrop-blur bg-white/80 border-b border-slate-200">
+  <div class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
+    <a href="#top" class="font-display font-extrabold text-lg">🔊 Acoustics<span class="text-violet-600">101</span></a>
+    <div class="hidden md:flex gap-6 text-sm text-slate-600 font-medium">
+      <a href="#tone" class="hover:text-violet-600"><span lang="en">Pitch &amp; Loudness</span><span lang="ja">音の高さと大きさ</span></a>
+      <a href="#harmonics" class="hover:text-violet-600"><span lang="en">Build a Sound</span><span lang="ja">音をつくる</span></a>
+      <a href="#beats" class="hover:text-violet-600"><span lang="en">Beats</span><span lang="ja">うなり</span></a>
+      <a href="#spectrum" class="hover:text-violet-600"><span lang="en">See Your Voice</span><span lang="ja">声を見る</span></a>
+      <a href="#waves" class="hover:text-violet-600"><span lang="en">Waves</span><span lang="ja">波</span></a>
+      <a href="#careers" class="hover:text-violet-600"><span lang="en">Why It Matters</span><span lang="ja">なぜ大切か</span></a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header id="top" class="relative overflow-hidden bg-slate-900 text-white">
+  <canvas id="heroWave" class="absolute inset-0 w-full h-full opacity-60"></canvas>
+  <div class="relative max-w-6xl mx-auto px-5 py-24 md:py-32 text-center">
+    <p class="uppercase tracking-[0.3em] text-cyan-300 text-xs mb-4"><span lang="en">The Science of Sound</span><span lang="ja">音の科学</span></p>
+    <h1 class="font-display text-4xl md:text-6xl font-extrabold leading-tight">
+      <span lang="en">Sound is <span class="grad-text">invisible</span>.<br>Let's make it something you can <span class="grad-text">see &amp; play with</span>.</span><span lang="ja">音は<span class="grad-text">目に見えません</span>。<br>それを<span class="grad-text">見て、いじって遊べる</span>ものにしましょう。</span>
+    </h1>
+    <p class="mt-6 text-slate-300 max-w-2xl mx-auto text-lg">
+      <span lang="en">Every sound — a whisper, a guitar, a rocket — is just vibrating air. Turn the knobs below, hear what changes,
+      and discover the physics that audio engineers and scientists use every day.</span><span lang="ja">あらゆる音 — ささやき、ギター、ロケット — は、ただの振動する空気です。下のつまみを回して、何が変わるかを聴き、
+      オーディオエンジニアや科学者が毎日使っている物理を発見しましょう。</span>
+    </p>
+    <a href="#tone" class="inline-block mt-8 px-8 py-3 rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 font-semibold shadow-lg hover:scale-105 transition">
+      <span lang="en">🎧 Start Exploring</span><span lang="ja">🎧 探検を始める</span>
+    </a>
+    <p class="mt-4 text-xs text-slate-400"><span lang="en">Tip: turn your volume on — these experiments make real sound!</span><span lang="ja">ヒント: 音量をオンにしてください — これらの実験は本物の音を出します！</span></p>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 py-14 space-y-20">
+
+  <!-- ===== TONE LAB ===== -->
+  <section id="tone" class="scroll-mt-20">
+    <div class="text-center mb-8">
+      <span class="text-violet-600 font-semibold text-sm"><span lang="en">EXPERIMENT 1</span><span lang="ja">実験 1</span></span>
+      <h2 class="text-3xl font-bold mt-1"><span lang="en">Pitch &amp; Loudness</span><span lang="ja">音の高さと大きさ</span></h2>
+      <p class="text-slate-500 mt-2 max-w-2xl mx-auto"><span lang="en">A sound wave has two basic ingredients. <b>Frequency</b> decides how high or low it sounds (pitch). <b>Amplitude</b> decides how loud it is. Play with both!</span><span lang="ja">音波には2つの基本的な要素があります。<b>周波数</b>は音の高さ（ピッチ）を決めます。<b>振幅</b>は音の大きさを決めます。両方を操作してみましょう！</span></p>
+    </div>
+    <div class="card rounded-2xl p-6 grid md:grid-cols-2 gap-8 items-center">
+      <div class="space-y-6">
+        <button id="tonePlay" class="w-full py-3 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 transition"><span lang="en">▶ Play Tone</span><span lang="ja">▶ トーンを再生</span></button>
+        <div>
+          <div class="flex justify-between mb-1"><label class="font-medium"><span lang="en">Frequency (pitch)</span><span lang="ja">周波数（音の高さ）</span></label>
+            <span class="font-mono text-violet-700"><span id="v_freq">440</span> Hz · <span id="v_note">A4</span></span></div>
+          <input id="freq" type="range" min="80" max="2000" step="1" value="440" class="w-full">
+          <div class="flex justify-between text-xs text-slate-400 mt-1"><span><span lang="en">Low / bass</span><span lang="ja">低い / 低音</span></span><span><span lang="en">High / treble</span><span lang="ja">高い / 高音</span></span></div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1"><label class="font-medium"><span lang="en">Amplitude (loudness)</span><span lang="ja">振幅（音の大きさ）</span></label>
+            <span class="font-mono text-violet-700"><span id="v_vol">50</span>%</span></div>
+          <input id="vol" type="range" min="0" max="100" step="1" value="50" class="w-full">
+        </div>
+        <details class="text-sm text-slate-600">
+          <summary class="cursor-pointer font-medium text-violet-700"><span lang="en">🔬 The science behind it</span><span lang="ja">🔬 その背後にある科学</span></summary>
+          <p class="mt-2"><span lang="en">Frequency is measured in <b>Hertz (Hz)</b> = vibrations per second. 440 Hz means the air pushes back and forth 440 times every second! Humans hear roughly <b>20 Hz to 20,000 Hz</b>. Bigger waves (amplitude) carry more energy, which your ear senses as louder.</span><span lang="ja">周波数は<b>ヘルツ（Hz）</b>= 1秒あたりの振動回数で測ります。440 Hz は空気が1秒間に440回前後に押し合うことを意味します！人間が聞こえる範囲はおおよそ<b>20 Hz から 20,000 Hz</b>です。波（振幅）が大きいほど多くのエネルギーを運び、耳はそれをより大きな音として感じます。</span></p>
+        </details>
+      </div>
+      <div class="bg-slate-900 rounded-xl p-3">
+        <canvas id="toneScope" class="w-full" style="height:240px"></canvas>
+        <p class="text-center text-slate-400 text-xs mt-1"><span lang="en">Live oscilloscope — the shape of the sound wave</span><span lang="ja">リアルタイムのオシロスコープ — 音波の形</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HARMONICS ===== -->
+  <section id="harmonics" class="scroll-mt-20">
+    <div class="text-center mb-8">
+      <span class="text-cyan-600 font-semibold text-sm"><span lang="en">EXPERIMENT 2</span><span lang="ja">実験 2</span></span>
+      <h2 class="text-3xl font-bold mt-1"><span lang="en">Build a Sound from Pure Tones</span><span lang="ja">純音から音をつくる</span></h2>
+      <p class="text-slate-500 mt-2 max-w-2xl mx-auto"><span lang="en">Why does a violin sound different from a flute playing the same note? Because real sounds are made of many <b>harmonics</b> stacked together. Mix your own!</span><span lang="ja">なぜバイオリンとフルートは同じ音を弾いても違って聞こえるのでしょうか？それは、実際の音が多くの<b>倍音</b>が重なってできているからです。自分で混ぜてみましょう！</span></p>
+    </div>
+    <div class="card rounded-2xl p-6 grid md:grid-cols-2 gap-8 items-center">
+      <div class="space-y-4">
+        <button id="harmPlay" class="w-full py-3 rounded-xl bg-cyan-600 text-white font-semibold hover:bg-cyan-700 transition"><span lang="en">▶ Play My Sound</span><span lang="ja">▶ 自分の音を再生</span></button>
+        <div class="flex gap-2 flex-wrap">
+          <button data-hpreset="sine"  class="hpreset pill px-3 py-1.5 rounded-full text-sm bg-slate-100"><span lang="en">Pure (sine)</span><span lang="ja">純音（sine）</span></button>
+          <button data-hpreset="square" class="hpreset pill px-3 py-1.5 rounded-full text-sm bg-slate-100"><span lang="en">Buzzy (square)</span><span lang="ja">ブザー音（square）</span></button>
+          <button data-hpreset="saw"   class="hpreset pill px-3 py-1.5 rounded-full text-sm bg-slate-100"><span lang="en">Bright (saw)</span><span lang="ja">明るい音（saw）</span></button>
+          <button data-hpreset="organ" class="hpreset pill px-3 py-1.5 rounded-full text-sm bg-slate-100"><span lang="en">Organ</span><span lang="ja">オルガン</span></button>
+        </div>
+        <div id="harmSliders" class="space-y-2"></div>
+        <details class="text-sm text-slate-600">
+          <summary class="cursor-pointer font-medium text-cyan-700"><span lang="en">🔬 The science behind it</span><span lang="ja">🔬 その背後にある科学</span></summary>
+          <p class="mt-2"><span lang="en">This is <b>Fourier's big idea</b>: <i>any</i> sound can be built by adding simple sine waves at multiples of a base frequency (the harmonics). The recipe of harmonics is called <b>timbre</b> — it's why every instrument and voice is unique.</span><span lang="ja">これが<b>フーリエの大きなアイデア</b>です。<i>どんな</i>音も、基本周波数の整数倍の単純なサイン波（倍音）を足し合わせることでつくれます。倍音の配合は<b>音色（ティンバー）</b>と呼ばれ — すべての楽器や声が唯一無二である理由です。</span></p>
+        </details>
+      </div>
+      <div class="bg-slate-900 rounded-xl p-3">
+        <canvas id="harmScope" class="w-full" style="height:240px"></canvas>
+        <p class="text-center text-slate-400 text-xs mt-1"><span lang="en">Your combined waveform</span><span lang="ja">合成されたあなたの波形</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BEATS ===== -->
+  <section id="beats" class="scroll-mt-20">
+    <div class="text-center mb-8">
+      <span class="text-violet-600 font-semibold text-sm"><span lang="en">EXPERIMENT 3</span><span lang="ja">実験 3</span></span>
+      <h2 class="text-3xl font-bold mt-1"><span lang="en">Beats — When Waves Collide</span><span lang="ja">うなり — 波がぶつかるとき</span></h2>
+      <p class="text-slate-500 mt-2 max-w-2xl mx-auto"><span lang="en">Play two notes that are <i>almost</i> the same and you'll hear a pulsing "wah-wah-wah." Musicians use this trick to tune their instruments!</span><span lang="ja"><i>ほとんど</i>同じ2つの音を鳴らすと、「ワーワーワー」という脈打つ音が聞こえます。音楽家はこの仕組みを使って楽器を調律します！</span></p>
+    </div>
+    <div class="card rounded-2xl p-6 grid md:grid-cols-2 gap-8 items-center">
+      <div class="space-y-5">
+        <button id="beatPlay" class="w-full py-3 rounded-xl bg-violet-600 text-white font-semibold hover:bg-violet-700 transition"><span lang="en">▶ Play Both Tones</span><span lang="ja">▶ 両方のトーンを再生</span></button>
+        <div>
+          <div class="flex justify-between mb-1"><label class="font-medium"><span lang="en">Tone 1</span><span lang="ja">トーン 1</span></label><span class="font-mono text-violet-700"><span id="v_b1">440</span> Hz</span></div>
+          <input id="b1" type="range" min="200" max="600" step="1" value="440" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1"><label class="font-medium"><span lang="en">Tone 2</span><span lang="ja">トーン 2</span></label><span class="font-mono text-violet-700"><span id="v_b2">444</span> Hz</span></div>
+          <input id="b2" type="range" min="200" max="600" step="1" value="444" class="w-full">
+        </div>
+        <div class="bg-violet-50 rounded-lg p-3 text-sm"><span lang="en">You'll hear <b></span><span lang="ja"><b>毎秒 </span><span id="beatRate">4</span><span lang="en"> beats per second</b> — that's just the difference between the two frequencies!</span><span lang="ja"> 回のうなり</b>が聞こえます — これは2つの周波数の差そのものです！</span></div>
+      </div>
+      <div class="bg-slate-900 rounded-xl p-3">
+        <canvas id="beatScope" class="w-full" style="height:240px"></canvas>
+        <p class="text-center text-slate-400 text-xs mt-1"><span lang="en">See the volume swell and fade — that's interference</span><span lang="ja">音量が膨らんで消えていくのを見てください — これが干渉です</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SPECTRUM (MIC) ===== -->
+  <section id="spectrum" class="scroll-mt-20">
+    <div class="text-center mb-8">
+      <span class="text-cyan-600 font-semibold text-sm"><span lang="en">EXPERIMENT 4</span><span lang="ja">実験 4</span></span>
+      <h2 class="text-3xl font-bold mt-1"><span lang="en">See Your Own Voice</span><span lang="ja">自分の声を見る</span></h2>
+      <p class="text-slate-500 mt-2 max-w-2xl mx-auto"><span lang="en">Turn on your microphone and watch your voice come alive as a rainbow of frequencies. Try humming, whistling, or singing "ahhh"!</span><span lang="ja">マイクをオンにして、あなたの声が周波数の虹となって生き生きと現れるのを見てみましょう。ハミング、口笛、「あー」と歌ってみてください！</span></p>
+    </div>
+    <div class="card rounded-2xl p-6">
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <button id="micBtn" class="px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-semibold hover:bg-cyan-700 transition"><span lang="en">🎤 Turn On Microphone</span><span lang="ja">🎤 マイクをオンにする</span></button>
+        <span id="micMsg" class="text-sm text-slate-500"><span lang="en">Your audio never leaves your device — it stays in your browser.</span><span lang="ja">あなたの音声がデバイスから出ることはありません — ブラウザ内に留まります。</span></span>
+        <span class="ml-auto font-mono text-sm text-cyan-700"><span lang="en">Loudest pitch: </span><span lang="ja">最も大きい音の高さ: </span><span id="micPeak">—</span></span>
+      </div>
+      <div class="bg-slate-900 rounded-xl p-3">
+        <canvas id="specCanvas" class="w-full" style="height:260px"></canvas>
+        <p class="text-center text-slate-400 text-xs mt-1"><span lang="en">Frequency spectrum (low pitch ◄── ──► high pitch)</span><span lang="ja">周波数スペクトル（低い音 ◄── ──► 高い音）</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WAVES / WAVELENGTH ===== -->
+  <section id="waves" class="scroll-mt-20">
+    <div class="text-center mb-8">
+      <span class="text-violet-600 font-semibold text-sm"><span lang="en">EXPERIMENT 5</span><span lang="ja">実験 5</span></span>
+      <h2 class="text-3xl font-bold mt-1"><span lang="en">How Fast &amp; How Long Are Sound Waves?</span><span lang="ja">音波はどれくらい速く、どれくらい長いのか？</span></h2>
+      <p class="text-slate-500 mt-2 max-w-2xl mx-auto"><span lang="en">Sound zooms through air, water, and metal at very different speeds. The faster it goes, the longer each wave stretches.</span><span lang="ja">音は空気・水・金属の中をそれぞれ大きく異なる速さで進みます。速く進むほど、1つ1つの波は長く伸びます。</span></p>
+    </div>
+    <div class="card rounded-2xl p-6 grid md:grid-cols-3 gap-8 items-center">
+      <div class="space-y-5 md:col-span-1">
+        <div>
+          <div class="flex justify-between mb-1"><label class="font-medium"><span lang="en">Frequency</span><span lang="ja">周波数</span></label><span class="font-mono text-violet-700"><span id="v_wf">440</span> Hz</span></div>
+          <input id="wf" type="range" min="50" max="2000" step="1" value="440" class="w-full">
+        </div>
+        <div>
+          <label class="font-medium block mb-2"><span lang="en">Material the sound travels through</span><span lang="ja">音が伝わる物質</span></label>
+          <div class="flex flex-col gap-2">
+            <button data-c="343"  class="medbtn pill active px-3 py-2 rounded-lg text-sm bg-slate-100 text-left"><span lang="en">🌬️ Air — 343 m/s</span><span lang="ja">🌬️ 空気 — 343 m/s</span></button>
+            <button data-c="1480" class="medbtn pill px-3 py-2 rounded-lg text-sm bg-slate-100 text-left"><span lang="en">💧 Water — 1,480 m/s</span><span lang="ja">💧 水 — 1,480 m/s</span></button>
+            <button data-c="5960" class="medbtn pill px-3 py-2 rounded-lg text-sm bg-slate-100 text-left"><span lang="en">🔩 Steel — 5,960 m/s</span><span lang="ja">🔩 鋼鉄 — 5,960 m/s</span></button>
+          </div>
+        </div>
+        <div class="bg-violet-50 rounded-lg p-4 text-center">
+          <div class="text-xs text-slate-500 uppercase tracking-wide"><span lang="en">Wavelength (λ = speed ÷ frequency)</span><span lang="ja">波長（λ = 速さ ÷ 周波数）</span></div>
+          <div class="text-3xl font-display font-bold text-violet-700"><span id="v_lambda">0.78</span> m</div>
+        </div>
+        <details class="text-sm text-slate-600">
+          <summary class="cursor-pointer font-medium text-violet-700"><span lang="en">🔬 The science behind it</span><span lang="ja">🔬 その背後にある科学</span></summary>
+          <p class="mt-2"><span lang="en">Sound is faster in stiffer, denser materials — that's why you can hear a train coming through the rails before the air. Wavelength λ = c / f, where c is the speed of sound. Lower notes have much longer waves (a deep 50 Hz wave in air is nearly 7 meters long!).</span><span lang="ja">音は硬くて密度の高い物質ほど速く伝わります — だからこそ、空気を通して聞こえる前にレールを通して列車が近づくのが聞こえるのです。波長 λ = c / f で、c は音速です。低い音ははるかに長い波を持ちます（空気中の深い 50 Hz の波は約7メートルもの長さになります！）。</span></p>
+        </details>
+      </div>
+      <div class="md:col-span-2 bg-slate-900 rounded-xl p-3">
+        <canvas id="waveCanvas" class="w-full" style="height:260px"></canvas>
+        <p class="text-center text-slate-400 text-xs mt-1"><span lang="en">One wavelength is marked between the dashed lines</span><span lang="ja">破線の間に1波長が示されています</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CAREERS / INSPIRATION ===== -->
+  <section id="careers" class="scroll-mt-20">
+    <div class="rounded-3xl bg-slate-900 text-white p-10 md:p-14 text-center relative overflow-hidden">
+      <div class="relative">
+        <h2 class="text-3xl md:text-4xl font-extrabold"><span lang="en">Sound is everywhere. <span class="grad-text">So are the careers.</span></span><span lang="ja">音はどこにでもあります。<span class="grad-text">仕事も同じです。</span></span></h2>
+        <p class="text-slate-300 mt-4 max-w-2xl mx-auto"><span lang="en">The same physics you just played with powers concert halls, hearing aids, noise-cancelling headphones, sonar, smart speakers, and robots that can listen. People who understand sound build the future.</span><span lang="ja">あなたが今遊んだのと同じ物理が、コンサートホール、補聴器、ノイズキャンセリングヘッドホン、ソナー、スマートスピーカー、そして聴くことができるロボットを動かしています。音を理解する人々が未来をつくります。</span></p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10 text-left">
+          <div class="bg-white/5 border border-white/10 rounded-xl p-5"><div class="text-2xl">🎚️</div><h3 class="font-semibold mt-2"><span lang="en">Audio Engineer</span><span lang="ja">オーディオエンジニア</span></h3><p class="text-sm text-slate-400 mt-1"><span lang="en">Records, mixes, and designs the sound of music, film, and games.</span><span lang="ja">音楽・映画・ゲームの音を録音・ミックス・設計します。</span></p></div>
+          <div class="bg-white/5 border border-white/10 rounded-xl p-5"><div class="text-2xl">🏛️</div><h3 class="font-semibold mt-2"><span lang="en">Acoustician</span><span lang="ja">音響技術者（アコースティシャン）</span></h3><p class="text-sm text-slate-400 mt-1"><span lang="en">Shapes how rooms, stadiums, and cities sound — and stays quiet.</span><span lang="ja">部屋・スタジアム・都市の響きを形づくり、静けさを保ちます。</span></p></div>
+          <div class="bg-white/5 border border-white/10 rounded-xl p-5"><div class="text-2xl">🤖</div><h3 class="font-semibold mt-2"><span lang="en">Speech &amp; AI Engineer</span><span lang="ja">音声・AIエンジニア</span></h3><p class="text-sm text-slate-400 mt-1"><span lang="en">Teaches machines to hear, understand, and talk with people.</span><span lang="ja">機械が人の声を聞き、理解し、対話できるように教えます。</span></p></div>
+          <div class="bg-white/5 border border-white/10 rounded-xl p-5"><div class="text-2xl">🩺</div><h3 class="font-semibold mt-2"><span lang="en">Hearing Scientist</span><span lang="ja">聴覚科学者</span></h3><p class="text-sm text-slate-400 mt-1"><span lang="en">Uses sound and physics to help people hear and heal.</span><span lang="ja">音と物理を使って人々が聞こえるよう、癒えるよう助けます。</span></p></div>
+        </div>
+        <p class="mt-10 text-lg font-display font-semibold"><span lang="en">Curious how sound works? You already think like an engineer. 🚀</span><span lang="ja">音の仕組みが気になりますか？あなたはもうエンジニアのように考えています。🚀</span></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== FOOTER (consulting brand) ===== -->
+<footer class="border-t border-slate-200 bg-white">
+  <div class="max-w-6xl mx-auto px-5 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div>
+      <div class="font-display font-extrabold text-lg">🔊 Acoustics<span class="text-violet-600">101</span></div>
+      <p class="text-sm text-slate-500 mt-1"><span lang="en">An interactive sound-science experience · brought to you by <b>[Your Company Name]</b> — Acoustics &amp; Audio Consulting.</span><span lang="ja">インタラクティブな音の科学体験 · 提供 <b>[Your Company Name]</b> — 音響・オーディオコンサルティング。</span></p>
+    </div>
+    <p class="text-xs text-slate-400"><span lang="en">Built for curious minds. Works best with headphones. © </span><span lang="ja">好奇心旺盛な人のために。ヘッドホンで最適に動作します。© </span><span id="yr"></span> [Your Company]</p>
+  </div>
+</footer>
+
+<script>
+// =================== shared audio ===================
+let actx=null;
+function ctx(){ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); return actx; }
+const $=id=>document.getElementById(id);
+document.getElementById('yr').textContent='2026';
+
+// note name from frequency
+function noteName(f){ if(f<=0) return '–'; const n=Math.round(12*Math.log2(f/440));
+  const names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const idx=((n+9)%12+12)%12; const oct=4+Math.floor((n+9)/12); return names[idx]+oct; }
+
+// generic oscilloscope draw
+function scope(canvas, analyser, color){
+  const c=canvas.getContext('2d'); const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth, H=canvas.clientHeight; canvas.width=W*dpr; canvas.height=H*dpr; c.setTransform(dpr,0,0,dpr,0,0);
+  const buf=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(buf);
+  c.clearRect(0,0,W,H);
+  // grid
+  c.strokeStyle='rgba(255,255,255,.06)'; c.lineWidth=1;
+  for(let i=1;i<4;i++){c.beginPath();c.moveTo(0,H*i/4);c.lineTo(W,H*i/4);c.stroke();}
+  c.beginPath(); c.lineWidth=2.5; c.strokeStyle=color;
+  for(let i=0;i<buf.length;i++){ const x=i/buf.length*W; const y=(buf[i]/128-1)*H*0.42+H/2; i===0?c.moveTo(x,y):c.lineTo(x,y); }
+  c.stroke();
+}
+
+// =================== Experiment 1: Tone Lab ===================
+const tone={osc:null,gain:null,ana:null,on:false,raf:0};
+function toneUpdate(){ $('v_freq').textContent=$('freq').value; $('v_note').textContent=noteName(+$('freq').value);
+  $('v_vol').textContent=$('vol').value;
+  if(tone.on){ tone.osc.frequency.setTargetAtTime(+$('freq').value,ctx().currentTime,0.01);
+    tone.gain.gain.setTargetAtTime(+$('vol').value/100*0.35,ctx().currentTime,0.02); } }
+$('tonePlay').onclick=()=>{ const a=ctx();
+  if(tone.on){ tone.osc.stop(); cancelAnimationFrame(tone.raf); tone.on=false; $('tonePlay').textContent='▶ Play Tone'; $('tonePlay').classList.replace('bg-violet-700','bg-violet-600'); return; }
+  tone.osc=a.createOscillator(); tone.gain=a.createGain(); tone.ana=a.createAnalyser(); tone.ana.fftSize=2048;
+  tone.osc.type='sine'; tone.osc.frequency.value=+$('freq').value; tone.gain.gain.value=+$('vol').value/100*0.35;
+  tone.osc.connect(tone.gain); tone.gain.connect(tone.ana); tone.ana.connect(a.destination); tone.osc.start();
+  tone.on=true; $('tonePlay').textContent='⏸ Stop';
+  (function loop(){ scope($('toneScope'),tone.ana,'#a78bfa'); tone.raf=requestAnimationFrame(loop); })();
+};
+$('freq').oninput=toneUpdate; $('vol').oninput=toneUpdate; toneUpdate();
+
+// =================== Experiment 2: Harmonics ===================
+const NH=6; const harm={osc:null,gain:null,ana:null,on:false,raf:0,amps:[1,0,0,0,0,0]};
+const hWrap=$('harmSliders');
+for(let i=0;i<NH;i++){ const row=document.createElement('div');
+  row.innerHTML=`<div class="flex justify-between text-xs mb-0.5"><span>${i===0?'Fundamental':'Harmonic '+(i+1)}</span><span class="font-mono text-cyan-700" id="ha${i}">${i===0?100:0}%</span></div>
+  <input id="hs${i}" type="range" min="0" max="100" value="${i===0?100:0}" class="w-full">`;
+  hWrap.appendChild(row); }
+function buildWave(){ const real=new Float32Array(NH+1), imag=new Float32Array(NH+1);
+  for(let i=0;i<NH;i++){ imag[i+1]=harm.amps[i]; } return ctx().createPeriodicWave(real,imag,{disableNormalization:false}); }
+function harmRead(){ for(let i=0;i<NH;i++){ harm.amps[i]=+$('hs'+i).value/100; $('ha'+i).textContent=$('hs'+i).value+'%'; }
+  if(harm.on){ harm.osc.setPeriodicWave(buildWave()); } }
+for(let i=0;i<NH;i++) $('hs'+i).oninput=harmRead;
+$('harmPlay').onclick=()=>{ const a=ctx();
+  if(harm.on){ harm.osc.stop(); cancelAnimationFrame(harm.raf); harm.on=false; $('harmPlay').textContent='▶ Play My Sound'; return; }
+  harm.osc=a.createOscillator(); harm.gain=a.createGain(); harm.ana=a.createAnalyser(); harm.ana.fftSize=2048;
+  harm.osc.setPeriodicWave(buildWave()); harm.osc.frequency.value=220; harm.gain.gain.value=0.3;
+  harm.osc.connect(harm.gain); harm.gain.connect(harm.ana); harm.ana.connect(a.destination); harm.osc.start();
+  harm.on=true; $('harmPlay').textContent='⏸ Stop';
+  (function loop(){ scope($('harmScope'),harm.ana,'#22d3ee'); harm.raf=requestAnimationFrame(loop); })();
+};
+const HPRES={ sine:[100,0,0,0,0,0], square:[100,0,33,0,20,0], saw:[100,50,33,25,20,16], organ:[100,0,70,0,40,30] };
+document.querySelectorAll('.hpreset').forEach(b=>b.onclick=()=>{
+  const p=HPRES[b.dataset.hpreset]; for(let i=0;i<NH;i++){ $('hs'+i).value=p[i]; }
+  document.querySelectorAll('.hpreset').forEach(x=>x.classList.remove('active')); b.classList.add('active'); harmRead(); });
+harmRead();
+
+// =================== Experiment 3: Beats ===================
+const beat={o1:null,o2:null,g:null,ana:null,on:false,raf:0};
+function beatRead(){ $('v_b1').textContent=$('b1').value; $('v_b2').textContent=$('b2').value;
+  $('beatRate').textContent=Math.abs($('b1').value-$('b2').value);
+  if(beat.on){ beat.o1.frequency.setTargetAtTime(+$('b1').value,ctx().currentTime,0.01);
+    beat.o2.frequency.setTargetAtTime(+$('b2').value,ctx().currentTime,0.01); } }
+$('b1').oninput=beatRead; $('b2').oninput=beatRead;
+$('beatPlay').onclick=()=>{ const a=ctx();
+  if(beat.on){ beat.o1.stop(); beat.o2.stop(); cancelAnimationFrame(beat.raf); beat.on=false; $('beatPlay').textContent='▶ Play Both Tones'; return; }
+  beat.o1=a.createOscillator(); beat.o2=a.createOscillator(); beat.g=a.createGain(); beat.ana=a.createAnalyser(); beat.ana.fftSize=4096;
+  beat.o1.frequency.value=+$('b1').value; beat.o2.frequency.value=+$('b2').value; beat.g.gain.value=0.22;
+  beat.o1.connect(beat.g); beat.o2.connect(beat.g); beat.g.connect(beat.ana); beat.ana.connect(a.destination);
+  beat.o1.start(); beat.o2.start(); beat.on=true; $('beatPlay').textContent='⏸ Stop';
+  (function loop(){ scope($('beatScope'),beat.ana,'#c084fc'); beat.raf=requestAnimationFrame(loop); })();
+};
+beatRead();
+
+// =================== Experiment 4: Mic spectrum ===================
+const mic={ana:null,on:false,raf:0,stream:null};
+$('micBtn').onclick=async ()=>{
+  if(mic.on){ mic.stream.getTracks().forEach(t=>t.stop()); cancelAnimationFrame(mic.raf); mic.on=false; $('micBtn').textContent='🎤 Turn On Microphone'; $('micPeak').textContent='—'; return; }
+  try{ const a=ctx(); mic.stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const src=a.createMediaStreamSource(mic.stream); mic.ana=a.createAnalyser(); mic.ana.fftSize=4096; src.connect(mic.ana);
+    mic.on=true; $('micBtn').textContent='⏹ Stop Microphone'; $('micMsg').textContent='Listening… try humming or whistling!';
+    const cv=$('specCanvas'), c=cv.getContext('2d'); const bins=mic.ana.frequencyBinCount; const data=new Uint8Array(bins);
+    const nyq=a.sampleRate/2; const maxHz=5000; const showBins=Math.floor(bins*maxHz/nyq);
+    (function loop(){ mic.ana.getByteFrequencyData(data);
+      const dpr=window.devicePixelRatio||1, W=cv.clientWidth,H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; c.setTransform(dpr,0,0,dpr,0,0);
+      c.clearRect(0,0,W,H);
+      let peak=0,peakI=0;
+      for(let i=0;i<showBins;i++){ if(data[i]>peak){peak=data[i];peakI=i;} }
+      for(let i=0;i<showBins;i++){ const x=i/showBins*W; const bw=W/showBins+1; const h=data[i]/255*H;
+        const hue=200+ (i/showBins)*140; c.fillStyle=`hsl(${hue},85%,${30+data[i]/255*35}%)`;
+        c.fillRect(x,H-h,bw,h); }
+      if(peak>60){ const hz=peakI*nyq/bins; $('micPeak').textContent=Math.round(hz)+' Hz · '+noteName(hz); }
+      mic.raf=requestAnimationFrame(loop); })();
+  }catch(e){ $('micMsg').textContent='⚠️ Microphone blocked. Allow mic access in your browser to try this experiment.'; }
+};
+
+// =================== Experiment 5: Waves / wavelength ===================
+let waveC=343, waveT=0;
+function waveRead(){ const f=+$('wf').value; $('v_wf').textContent=f; const lam=waveC/f;
+  $('v_lambda').textContent = lam.toFixed(lam>=1 ? 2 : 3); }
+$('wf').oninput=waveRead;
+document.querySelectorAll('.medbtn').forEach(b=>b.onclick=()=>{ waveC=+b.dataset.c;
+  document.querySelectorAll('.medbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); waveRead(); });
+(function waveLoop(){ const cv=$('waveCanvas'), c=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth,H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,W,H);
+  const f=+$('wf').value; const lam=waveC/f;
+  // show ~2.4 wavelengths across the canvas (normalized view), mark one wavelength
+  const cycles=2.4; const pxPerWave=W/cycles;
+  c.strokeStyle='rgba(255,255,255,.06)'; c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+  // wavelength markers
+  c.strokeStyle='rgba(255,255,255,.25)'; c.setLineDash([5,5]);
+  c.beginPath(); c.moveTo(pxPerWave*0.4,0); c.lineTo(pxPerWave*0.4,H); c.stroke();
+  c.beginPath(); c.moveTo(pxPerWave*1.4,0); c.lineTo(pxPerWave*1.4,H); c.stroke(); c.setLineDash([]);
+  c.fillStyle='rgba(255,255,255,.5)'; c.font='12px Inter'; c.textAlign='center';
+  c.fillText('λ = '+lam.toFixed(lam>=1?2:3)+' m', pxPerWave*0.9, 16);
+  // animated wave
+  const grad=c.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#a78bfa'); grad.addColorStop(1,'#22d3ee');
+  c.strokeStyle=grad; c.lineWidth=3; c.beginPath();
+  for(let x=0;x<=W;x++){ const phase=(x/pxPerWave)*2*Math.PI - waveT; const y=H/2 - Math.sin(phase)*H*0.32; x===0?c.moveTo(x,y):c.lineTo(x,y); }
+  c.stroke();
+  waveT += 0.05 + f/8000;  // higher freq animates a bit faster
+  requestAnimationFrame(waveLoop);
+})();
+waveRead();
+
+// =================== hero background ===================
+(function hero(){ const cv=$('heroWave'), c=cv.getContext('2d'); let t=0;
+  (function loop(){ const dpr=window.devicePixelRatio||1, W=cv.clientWidth,H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; c.setTransform(dpr,0,0,dpr,0,0);
+    c.clearRect(0,0,W,H);
+    const layers=[['#7c3aed',0.5,1.5,40],['#06b6d4',0.4,2.2,55],['#a78bfa',0.3,3.1,30]];
+    layers.forEach(([col,a,fr,amp],k)=>{ c.globalAlpha=a; c.strokeStyle=col; c.lineWidth=2; c.beginPath();
+      for(let x=0;x<=W;x+=4){ const y=H/2 + Math.sin(x/W*fr*Math.PI*2 + t*(1+k*0.4))*amp + Math.sin(x/120+t)*10; x===0?c.moveTo(x,y):c.lineTo(x,y);} c.stroke(); });
+    c.globalAlpha=1; t+=0.02; requestAnimationFrame(loop); })();
+})();
+</script>
+<script>
+(function(){
+  function setLang(l){
+    document.body.classList.toggle('lang-en', l==='en');
+    document.body.classList.toggle('lang-ja', l==='ja');
+    document.documentElement.lang=l;
+    var en=document.getElementById('enBtn'), ja=document.getElementById('jaBtn');
+    if(en){ en.style.background=l==='en'?'#4f46e5':'transparent'; en.style.color=l==='en'?'#fff':'inherit'; }
+    if(ja){ ja.style.background=l==='ja'?'#4f46e5':'transparent'; ja.style.color=l==='ja'?'#fff':'inherit'; }
+    try{ localStorage.setItem('docs-lang', l); }catch(e){}
+  }
+  window.setLang=setLang;
+  var saved='en';
+  try{ saved=localStorage.getItem('docs-lang') || ((navigator.language||'').toLowerCase().indexOf('ja')===0?'ja':'en'); }catch(e){}
+  setLang(saved);
+})();
+</script>
+</body>
+</html>

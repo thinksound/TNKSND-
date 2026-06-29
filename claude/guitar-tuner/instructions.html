@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instructions · Acoustic Guitar Tuner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{ background:#0b1020; font-family:ui-sans-serif,system-ui,sans-serif; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  code.k{ font-family:ui-monospace,Menlo,monospace; background:#0f172a; border:1px solid #1e293b; border-radius:5px; padding:1px 5px; color:#a7f3d0; }
+  h2{ scroll-margin-top:24px; }
+  a.tocy:hover{ color:#6ee7b7; }
+  body.lang-en [lang=ja]{ display:none; }
+  body.lang-ja [lang=en]{ display:none; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen lang-en">
+<div class="max-w-[860px] mx-auto px-4 py-8">
+
+  <header class="mb-8 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">
+        <span lang="en">📖 Instructions &amp; Guide</span><span lang="ja">📖 説明とガイド</span></h1>
+      <p class="text-slate-400 text-sm mt-1">
+        <span lang="en">Acoustic Guitar Tuner — how it works and how to use it.</span>
+        <span lang="ja">アコースティックギター・チューナー — 仕組みと使い方。</span></p>
+    </div>
+    <div class="shrink-0 flex items-center gap-2">
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button>
+        <button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button>
+      </div>
+      <a href="guitar-tuner.html" class="px-3 py-2 text-sm rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+        <span lang="en">▶ Open tuner</span><span lang="ja">▶ チューナーを開く</span></a>
+    </div>
+  </header>
+
+  <!-- ============================ ENGLISH ============================ -->
+  <div lang="en">
+  <nav class="card rounded-xl p-4 mb-8 text-sm">
+    <div class="text-slate-400 uppercase tracking-wide text-[11px] mb-2">Contents</div>
+    <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal list-inside text-emerald-300">
+      <li><a class="tocy" href="#start">Quick start</a></li>
+      <li><a class="tocy" href="#tuning">Standard tuning</a></li>
+      <li><a class="tocy" href="#read">Reading the display</a></li>
+      <li><a class="tocy" href="#strings">String buttons &amp; auto-detect</a></li>
+      <li><a class="tocy" href="#scopes">Waveform &amp; spectrum</a></li>
+      <li><a class="tocy" href="#tips">Tips for an accurate read</a></li>
+      <li><a class="tocy" href="#how">How it detects pitch</a></li>
+      <li><a class="tocy" href="#trouble">Troubleshooting &amp; privacy</a></li>
+    </ol>
+  </nav>
+
+  <section class="mb-8"><h2 id="start" class="text-xl font-semibold text-white mb-2">1 · Quick start</h2>
+    <p class="text-slate-300 leading-relaxed">Open <code class="k">guitar-tuner.html</code> (double-click — no install). Click
+    <b class="text-emerald-300">🎤 Start Tuning</b> and allow microphone access, then pluck <b>one string at a time</b>.
+    The big note, the needle, and the cents readout tell you how far off you are; tune until you see
+    <b class="text-emerald-300">✓ IN TUNE</b> and hear the confirmation chime.</p></section>
+
+  <section class="mb-8"><h2 id="tuning" class="text-xl font-semibold text-white mb-2">2 · Standard tuning</h2>
+    <p class="text-slate-300 mb-3">Six strings, low to high:</p>
+    <div class="card rounded-xl overflow-hidden"><table class="w-full text-sm">
+      <thead class="bg-slate-800/60 text-slate-300"><tr><th class="text-left p-3">String</th><th class="text-left p-3">Note</th><th class="text-left p-3">Frequency</th></tr></thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-3">6th · Low E</td><td class="p-3 font-bold">E2</td><td class="p-3 mono">82.41 Hz</td></tr>
+        <tr><td class="p-3">5th · A</td><td class="p-3 font-bold">A2</td><td class="p-3 mono">110.00 Hz</td></tr>
+        <tr><td class="p-3">4th · D</td><td class="p-3 font-bold">D3</td><td class="p-3 mono">146.83 Hz</td></tr>
+        <tr><td class="p-3">3rd · G</td><td class="p-3 font-bold">G3</td><td class="p-3 mono">196.00 Hz</td></tr>
+        <tr><td class="p-3">2nd · B</td><td class="p-3 font-bold">B3</td><td class="p-3 mono">246.94 Hz</td></tr>
+        <tr><td class="p-3">1st · High E</td><td class="p-3 font-bold">E4</td><td class="p-3 mono">329.63 Hz</td></tr>
+      </tbody></table></div></section>
+
+  <section class="mb-8"><h2 id="read" class="text-xl font-semibold text-white mb-2">3 · Reading the display</h2>
+    <ul class="space-y-2 text-slate-300">
+      <li><b class="text-white">Big note</b> — the string you're closest to. Turns <span class="text-emerald-300">green</span> when in tune, amber when off.</li>
+      <li><b class="text-white">Frequency</b> — your measured pitch in Hz and the target for that string.</li>
+      <li><b class="text-white">Needle / meter</b> — how many <b>cents</b> sharp or flat you are. Centre (green zone) = in tune. Left = flat, right = sharp.</li>
+      <li><b class="text-white">Cents readout &amp; verdict</b> — a number plus <b>▲ tune up</b> (too low) or <b>▼ tune down</b> (too high). The window for <b>✓ IN TUNE</b> is <code class="k">±5 cents</code>.</li>
+    </ul>
+    <p class="text-slate-400 text-sm mt-3">A <b>cent</b> is 1/100 of a semitone — 1200 cents make an octave. ±5 cents is tighter than the ear can usually hear.</p></section>
+
+  <section class="mb-8"><h2 id="strings" class="text-xl font-semibold text-white mb-2">4 · String buttons &amp; auto-detect</h2>
+    <p class="text-slate-300 leading-relaxed">By default <b>Auto-detect: ON</b> — the tuner picks whichever string your pitch is closest to. This is convenient but can jump to the wrong string if you're very far out of tune.</p>
+    <p class="text-slate-300 leading-relaxed mt-2"><b>Tap a string</b> (e.g. E2) to <b>lock</b> onto it: now the tuner only compares against that target, which is the reliable way to tune a badly-detuned string. Tap it again, or press the Auto-detect button, to return to auto.</p></section>
+
+  <section class="mb-8"><h2 id="scopes" class="text-xl font-semibold text-white mb-2">5 · Waveform &amp; spectrum</h2>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="card rounded-xl p-4"><div class="text-emerald-300 font-semibold mb-1">Time waveform</div>
+        <p class="text-slate-300 text-sm">The raw microphone signal. A clean, steady, repeating shape means a good clear note; a messy trace means noise or a dying note.</p></div>
+      <div class="card rounded-xl p-4"><div class="text-emerald-300 font-semibold mb-1">Frequency spectrum (0–1200 Hz)</div>
+        <p class="text-slate-300 text-sm">Energy vs frequency. The tallest low peak is your fundamental; the amber dashed line marks the target string's frequency, so you can line them up visually.</p></div>
+    </div></section>
+
+  <section class="mb-8"><h2 id="tips" class="text-xl font-semibold text-white mb-2">6 · Tips for an accurate read</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li>Pluck a <b>single</b> string with a moderate, even pluck — let it ring, don't keep re-plucking.</li>
+      <li>Tune in a <b>quiet room</b>; background noise and other strings ringing confuse the detector.</li>
+      <li>Read the pitch <b>just after the attack settles</b> (a plucked string drifts slightly sharp at the very start).</li>
+      <li>For a very flat/sharp string, <b>lock the target</b> string first (§4) so auto-detect can't jump.</li>
+      <li>Approach the target <b>from below</b> (tune up into pitch) for better tuning stability.</li>
+    </ul></section>
+
+  <section class="mb-8"><h2 id="how" class="text-xl font-semibold text-white mb-2">7 · How it detects pitch</h2>
+    <p class="text-slate-300 leading-relaxed">The tuner uses <b>autocorrelation</b>: it slides the recent waveform against itself to find the lag at which it best repeats. That lag is the period; pitch = sample-rate ÷ period, refined with a parabolic fit for sub-sample accuracy. Several readings are <b>median-smoothed</b> to reject glitches. Cents are then computed as <code class="k">1200 · log₂(f / f_target)</code>. Autocorrelation is robust on low, harmonically-rich guitar notes where simple peak-picking can latch onto a harmonic.</p></section>
+
+  <section class="mb-10"><h2 id="trouble" class="text-xl font-semibold text-white mb-2">8 · Troubleshooting &amp; privacy</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li><b>"Microphone blocked"</b> — allow mic access for the page (and use <code class="k">http://localhost</code> or <code class="k">https</code>, not a raw <code class="k">file://</code> path, since browsers gate the mic).</li>
+      <li><b>Note jumps around</b> — too quiet or too noisy; pluck harder, get closer, or lock the string.</li>
+      <li><b>Wrong string detected</b> — you're more than a semitone off; lock the intended string.</li>
+      <li><b>Privacy</b> — all processing is in your browser; <b>no audio leaves your device</b>.</li>
+    </ul>
+    <p class="text-slate-400 text-sm mt-4">In-tune window = ±5 cents · reference A4 implied by the listed string frequencies.</p></section>
+  </div>
+
+  <!-- ============================ 日本語 ============================ -->
+  <div lang="ja">
+  <nav class="card rounded-xl p-4 mb-8 text-sm">
+    <div class="text-slate-400 uppercase tracking-wide text-[11px] mb-2">目次</div>
+    <ol class="grid sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal list-inside text-emerald-300">
+      <li><a class="tocy" href="#start-ja">クイックスタート</a></li>
+      <li><a class="tocy" href="#tuning-ja">標準チューニング</a></li>
+      <li><a class="tocy" href="#read-ja">表示の見方</a></li>
+      <li><a class="tocy" href="#strings-ja">弦ボタンと自動検出</a></li>
+      <li><a class="tocy" href="#scopes-ja">波形とスペクトル</a></li>
+      <li><a class="tocy" href="#tips-ja">正確に測るコツ</a></li>
+      <li><a class="tocy" href="#how-ja">ピッチ検出の仕組み</a></li>
+      <li><a class="tocy" href="#trouble-ja">トラブルシューティングとプライバシー</a></li>
+    </ol>
+  </nav>
+
+  <section class="mb-8"><h2 id="start-ja" class="text-xl font-semibold text-white mb-2">1 · クイックスタート</h2>
+    <p class="text-slate-300 leading-relaxed"><code class="k">guitar-tuner.html</code> を開きます（ダブルクリックでOK、インストール不要）。
+    <b class="text-emerald-300">🎤 チューニング開始</b>を押してマイクへのアクセスを許可し、<b>一度に1弦ずつ</b>弾きます。
+    大きな音名・針・セント表示でどれだけずれているか分かります。<b class="text-emerald-300">✓ 合っています</b>が出て確認音が鳴るまで調整してください。</p></section>
+
+  <section class="mb-8"><h2 id="tuning-ja" class="text-xl font-semibold text-white mb-2">2 · 標準チューニング</h2>
+    <p class="text-slate-300 mb-3">6本の弦（低音から高音へ）：</p>
+    <div class="card rounded-xl overflow-hidden"><table class="w-full text-sm">
+      <thead class="bg-slate-800/60 text-slate-300"><tr><th class="text-left p-3">弦</th><th class="text-left p-3">音名</th><th class="text-left p-3">周波数</th></tr></thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-3">6弦 · 低音E</td><td class="p-3 font-bold">E2</td><td class="p-3 mono">82.41 Hz</td></tr>
+        <tr><td class="p-3">5弦 · A</td><td class="p-3 font-bold">A2</td><td class="p-3 mono">110.00 Hz</td></tr>
+        <tr><td class="p-3">4弦 · D</td><td class="p-3 font-bold">D3</td><td class="p-3 mono">146.83 Hz</td></tr>
+        <tr><td class="p-3">3弦 · G</td><td class="p-3 font-bold">G3</td><td class="p-3 mono">196.00 Hz</td></tr>
+        <tr><td class="p-3">2弦 · B</td><td class="p-3 font-bold">B3</td><td class="p-3 mono">246.94 Hz</td></tr>
+        <tr><td class="p-3">1弦 · 高音E</td><td class="p-3 font-bold">E4</td><td class="p-3 mono">329.63 Hz</td></tr>
+      </tbody></table></div></section>
+
+  <section class="mb-8"><h2 id="read-ja" class="text-xl font-semibold text-white mb-2">3 · 表示の見方</h2>
+    <ul class="space-y-2 text-slate-300">
+      <li><b class="text-white">大きな音名</b> — 最も近い弦。合うと<span class="text-emerald-300">緑</span>、ずれると橙になります。</li>
+      <li><b class="text-white">周波数</b> — 測定したピッチ（Hz）とその弦の目標値。</li>
+      <li><b class="text-white">針 / メーター</b> — 何<b>セント</b>高い/低いか。中央（緑の帯）=合致、左=低い、右=高い。</li>
+      <li><b class="text-white">セント表示と判定</b> — 数値と<b>▲ 上げる</b>（低すぎ）/<b>▼ 下げる</b>（高すぎ）。<b>✓ 合っています</b>の範囲は <code class="k">±5 セント</code>。</li>
+    </ul>
+    <p class="text-slate-400 text-sm mt-3"><b>セント</b>は半音の1/100 — 1200 セントで1オクターブ。±5 セントは通常の耳では聞き分けにくいほど厳密です。</p></section>
+
+  <section class="mb-8"><h2 id="strings-ja" class="text-xl font-semibold text-white mb-2">4 · 弦ボタンと自動検出</h2>
+    <p class="text-slate-300 leading-relaxed">既定では<b>自動検出: オン</b> — ピッチに最も近い弦を自動で選びます。便利ですが、大きくずれていると誤った弦に飛ぶことがあります。</p>
+    <p class="text-slate-300 leading-relaxed mt-2"><b>弦をタップ</b>（例：E2）すると<b>固定</b>され、その目標のみと比較します。大きく狂った弦を確実に合わせるにはこれが確実です。もう一度タップするか自動検出ボタンで自動に戻ります。</p></section>
+
+  <section class="mb-8"><h2 id="scopes-ja" class="text-xl font-semibold text-white mb-2">5 · 波形とスペクトル</h2>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="card rounded-xl p-4"><div class="text-emerald-300 font-semibold mb-1">時間波形</div>
+        <p class="text-slate-300 text-sm">生のマイク信号。きれいで安定した繰り返し波形は良い明瞭な音、乱れた波形は雑音や減衰した音を意味します。</p></div>
+      <div class="card rounded-xl p-4"><div class="text-emerald-300 font-semibold mb-1">周波数スペクトル（0–1200 Hz）</div>
+        <p class="text-slate-300 text-sm">周波数ごとのエネルギー。一番低い高いピークが基本波。橙の破線が目標弦の周波数を示すので、視覚的に合わせられます。</p></div>
+    </div></section>
+
+  <section class="mb-8"><h2 id="tips-ja" class="text-xl font-semibold text-white mb-2">6 · 正確に測るコツ</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li><b>1本</b>の弦を適度に均一に弾く — 鳴らし続け、何度も弾き直さない。</li>
+      <li><b>静かな部屋</b>で。背景雑音や他弦の共鳴は検出を乱します。</li>
+      <li>アタックが落ち着いた<b>直後</b>に読む（弾いた瞬間は少し高めにずれます）。</li>
+      <li>大きく狂った弦は、まず目標弦を<b>固定</b>（§4）して自動検出が飛ばないように。</li>
+      <li><b>下から</b>（上げながら）目標に近づけると安定します。</li>
+    </ul></section>
+
+  <section class="mb-8"><h2 id="how-ja" class="text-xl font-semibold text-white mb-2">7 · ピッチ検出の仕組み</h2>
+    <p class="text-slate-300 leading-relaxed">本チューナーは<b>自己相関</b>を使います：直近の波形を自分自身とずらし、最もよく繰り返すラグ（遅れ）を探します。そのラグが周期で、ピッチ = サンプリング周波数 ÷ 周期。放物線フィットでサブサンプル精度に高め、複数の測定値を<b>中央値で平滑化</b>してノイズを除きます。セントは <code class="k">1200 · log₂(f / f_目標)</code> で計算。自己相関は、単純なピーク検出が倍音に引っかかりやすい低く倍音の豊かなギター音でも頑健です。</p></section>
+
+  <section class="mb-10"><h2 id="trouble-ja" class="text-xl font-semibold text-white mb-2">8 · トラブルシューティングとプライバシー</h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1">
+      <li><b>「マイクがブロック」</b> — ページにマイク許可を与え、<code class="k">file://</code> ではなく <code class="k">http://localhost</code> か <code class="k">https</code> で開く（ブラウザがマイクを制限するため）。</li>
+      <li><b>音名が安定しない</b> — 静かすぎる/雑音が多い。強めに弾く、近づく、または弦を固定。</li>
+      <li><b>誤った弦が検出される</b> — 半音以上ずれています。目的の弦を固定してください。</li>
+      <li><b>プライバシー</b> — すべてブラウザ内で処理し、<b>音声は端末外に出ません</b>。</li>
+    </ul>
+    <p class="text-slate-400 text-sm mt-4">合致範囲 = ±5 セント · 基準 A4 は記載の弦周波数から導出。</p></section>
+  </div>
+
+  <div class="text-center">
+    <a href="guitar-tuner.html" class="inline-block px-4 py-2.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+      <span lang="en">▶ Open the tuner</span><span lang="ja">▶ チューナーを開く</span></a>
+  </div>
+
+</div>
+
+<script>
+  const enBtn=document.getElementById('enBtn'), jaBtn=document.getElementById('jaBtn');
+  function setLang(l){
+    document.body.classList.toggle('lang-en', l==='en');
+    document.body.classList.toggle('lang-ja', l==='ja');
+    document.documentElement.lang=l;
+    [[enBtn,l==='en'],[jaBtn,l==='ja']].forEach(([b,act])=>{
+      b.classList.toggle('bg-indigo-600',act); b.classList.toggle('text-white',act);
+      b.classList.toggle('bg-slate-800',!act); b.classList.toggle('text-slate-300',!act);
+    });
+    try{ localStorage.setItem('gt-lang', l); }catch(e){}
+  }
+  enBtn.addEventListener('click',()=>setLang('en'));
+  jaBtn.addEventListener('click',()=>setLang('ja'));
+  let initialLang='en';
+  try{ const s=localStorage.getItem('gt-lang'); initialLang = s || ((navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en'); }catch(e){}
+  setLang(initialLang);
+</script>
+</body>
+</html>

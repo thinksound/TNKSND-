@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two-Mic Differential Beamforming Simulator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  html, body { background: #0b1020; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; background: #1e293b; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #6366f1; cursor: pointer; border: 2px solid #c7d2fe; box-shadow: 0 0 6px rgba(99,102,241,.6); }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #6366f1; cursor: pointer; border: 2px solid #c7d2fe; }
+  .card { background: #111827; border: 1px solid #1f2937; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen">
+
+<div class="max-w-[1500px] mx-auto px-4 py-6">
+
+  <!-- Header -->
+  <header class="mb-6 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight"
+          data-en="🎙️ Two-Microphone Differential Beamforming Simulator"
+          data-ja="🎙️ 2マイク差動ビームフォーミング・シミュレータ">
+        🎙️ Two-Microphone Differential Beamforming Simulator
+      </h1>
+      <p class="text-slate-400 text-sm mt-1"
+         data-en="First-order differential array — two mics on the x-axis. Adjust spacing, frequency, gain & phase to form omni, dipole and cardioid patterns, and pull the source distance in to see near-field effects (wavefront curvature & level imbalance)."
+         data-ja="x軸上に並んだ2つのマイクによる一次差動アレイ。間隔・周波数・ゲイン・位相を調整して無指向・双指向・カーディオイドの指向特性を作り、音源距離を近づけると近接界の効果（波面の湾曲とマイク間レベル差）が現れます。">
+        First-order differential array — two mics on the x-axis.
+      </p>
+    </div>
+    <div class="shrink-0 flex items-center gap-2">
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button>
+        <button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button>
+      </div>
+      <a href="instructions.html" class="px-3 py-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+         data-en="📖 Instructions" data-ja="📖 説明">📖 Instructions</a>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- ===================== CONTROL PANEL ===================== -->
+    <section class="lg:col-span-1 card rounded-xl p-5 space-y-5 self-start">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-white" data-en="Controls" data-ja="コントロール">Controls</h2>
+        <div class="flex gap-1">
+          <button data-preset="omni"     class="preset px-2 py-1 text-xs rounded-md bg-slate-700 hover:bg-slate-600" data-en="Omni" data-ja="オムニ">Omni</button>
+          <button data-preset="dipole"   class="preset px-2 py-1 text-xs rounded-md bg-slate-700 hover:bg-slate-600" data-en="Dipole" data-ja="双指向">Dipole</button>
+          <button data-preset="cardioid" class="preset px-2 py-1 text-xs rounded-md bg-slate-700 hover:bg-slate-600" data-en="Cardioid" data-ja="カーディオイド">Cardioid</button>
+        </div>
+      </div>
+
+      <!-- Spacing -->
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <label class="text-slate-300" data-en="Mic Spacing (d)" data-ja="マイク間隔 (d)">Mic Spacing (d)</label>
+          <span class="font-mono text-indigo-300"><span id="v_spacing">5.0</span> cm</span>
+        </div>
+        <input id="spacing" type="range" min="1" max="30" step="0.1" value="5" class="w-full">
+      </div>
+
+      <!-- Frequency -->
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <label class="text-slate-300" data-en="Frequency (f)" data-ja="周波数 (f)">Frequency (f)</label>
+          <span class="font-mono text-indigo-300"><span id="v_freq">1000</span> Hz</span>
+        </div>
+        <input id="freq" type="range" min="100" max="5000" step="10" value="1000" class="w-full">
+      </div>
+
+      <!-- Sampling rate -->
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <label class="text-slate-300" data-en="Sampling Rate (Fs)" data-ja="サンプリング周波数 (Fs)">Sampling Rate (Fs)</label>
+          <span class="font-mono text-indigo-300"><span id="v_fs">48</span> kHz</span>
+        </div>
+        <div class="flex gap-2">
+          <button data-fs="16000" class="fsbtn flex-1 px-2 py-1.5 text-xs rounded-md bg-slate-700 hover:bg-slate-600">16 kHz</button>
+          <button data-fs="48000" class="fsbtn flex-1 px-2 py-1.5 text-xs rounded-md bg-indigo-600 hover:bg-indigo-500">48 kHz</button>
+        </div>
+      </div>
+
+      <hr class="border-slate-700">
+
+      <!-- Mic 1 -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-semibold text-blue-300"><span data-en="Mic 1" data-ja="マイク1">Mic 1</span> <span class="text-slate-500 font-normal">(+d/2)</span></h3>
+        <div>
+          <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Gain" data-ja="ゲイン">Gain</label>
+            <span class="font-mono text-blue-300"><span id="v_g1">0.0</span> dB</span></div>
+          <input id="g1" type="range" min="-6" max="6" step="0.1" value="0" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Phase" data-ja="位相">Phase</label>
+            <span class="font-mono text-blue-300"><span id="v_p1">0</span>°</span></div>
+          <input id="p1" type="range" min="0" max="180" step="1" value="0" class="w-full">
+        </div>
+      </div>
+
+      <!-- Mic 2 -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-semibold text-amber-300"><span data-en="Mic 2" data-ja="マイク2">Mic 2</span> <span class="text-slate-500 font-normal">(−d/2)</span></h3>
+        <div>
+          <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Gain" data-ja="ゲイン">Gain</label>
+            <span class="font-mono text-amber-300"><span id="v_g2">0.0</span> dB</span></div>
+          <input id="g2" type="range" min="-6" max="6" step="0.1" value="0" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Phase" data-ja="位相">Phase</label>
+            <span class="font-mono text-amber-300"><span id="v_p2">0</span>°</span></div>
+          <input id="p2" type="range" min="0" max="180" step="1" value="0" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Delay" data-ja="遅延">Delay</label>
+            <span class="font-mono text-amber-300"><span id="v_delay">0</span> smp · <span id="v_delayms">0.000</span> ms</span></div>
+          <input id="delay" type="range" min="0" max="50" step="1" value="0" class="w-full">
+        </div>
+      </div>
+
+      <hr class="border-slate-700">
+
+      <!-- Source angle -->
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <label class="text-slate-300" data-en="Source Angle (θ)" data-ja="音源角度 (θ)">Source Angle (θ)</label>
+          <span class="font-mono text-emerald-300"><span id="v_src">0</span>°</span>
+        </div>
+        <input id="src" type="range" min="0" max="360" step="1" value="0" class="w-full">
+      </div>
+
+      <!-- Source distance (near-field) -->
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <label class="text-slate-300" data-en="Source Distance (r)" data-ja="音源距離 (r)">Source Distance (r)</label>
+          <span class="font-mono text-emerald-300"><span id="v_dist">5.00</span> m</span>
+        </div>
+        <input id="dist" type="range" min="0.1" max="5" step="0.05" value="5" class="w-full">
+        <p class="text-[11px] text-slate-500 mt-1"
+           data-en="Point source at range r. Large r → plane wave; small r → curved wavefront + per-mic level difference."
+           data-ja="距離 r の点音源。r が大きい→平面波、r が小さい→波面が湾曲しマイク間でレベル差が生じる。">Point source at range r.</p>
+      </div>
+
+      <!-- Metrics -->
+      <div class="grid grid-cols-3 gap-3 pt-1">
+        <div class="bg-slate-800/60 rounded-lg p-3">
+          <div class="text-[11px] uppercase tracking-wide text-slate-400" data-en="Front/Back" data-ja="前後比">Front/Back</div>
+          <div class="text-lg font-mono text-white"><span id="m_fb">0.0</span> dB</div>
+        </div>
+        <div class="bg-slate-800/60 rounded-lg p-3">
+          <div class="text-[11px] uppercase tracking-wide text-slate-400" data-en="Peak @" data-ja="ピーク方向">Peak @</div>
+          <div class="text-lg font-mono text-white"><span id="m_peak">0</span>°</div>
+        </div>
+        <div class="bg-slate-800/60 rounded-lg p-3" title="Level difference between the two mics due to range only (1/distance spreading) at the current source angle">
+          <div class="text-[11px] uppercase tracking-wide text-slate-400" data-en="Mic ΔL" data-ja="マイクΔL">Mic ΔL</div>
+          <div class="text-lg font-mono text-white"><span id="m_dl">0.0</span> dB</div>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-500 leading-relaxed"
+         data-en="Near-field point source: each mic uses its true distance dᵢ to the source at range r — phase −k·(dᵢ−r), k = 2πf/c, and amplitude r/dᵢ (1/distance spreading). User gain (dB→linear) & phase are applied and the two phasors summed. As r→∞ this becomes the far-field Δϕ = k·(d/2)·cosθ with equal levels. c = 343 m/s."
+         data-ja="近接界の点音源：各マイクは距離 r の音源までの実距離 dᵢ を用いる — 位相 −k·(dᵢ−r)（k = 2πf/c）、振幅 r/dᵢ（1/距離の拡散）。ユーザーのゲイン（dB→線形）と位相を適用し2つのフェーザを合成。r→∞ で遠方界 Δϕ = k·(d/2)·cosθ（レベル等しい）に一致。c = 343 m/s。">
+        Near-field point source.
+      </p>
+    </section>
+
+    <!-- ===================== VISUALIZERS ===================== -->
+    <section class="lg:col-span-2 space-y-5">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Polar -->
+        <div class="card rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-white mb-2"><span data-en="Polar Beam Pattern" data-ja="極座標ビームパターン">Polar Beam Pattern</span> <span class="text-slate-500">|V<sub>total</sub>(θ)| · dB</span></h2>
+          <div class="relative w-full" style="aspect-ratio:1/1;">
+            <canvas id="polar" class="w-full h-full"></canvas>
+          </div>
+        </div>
+        <!-- Cartesian -->
+        <div class="card rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-white mb-2"><span data-en="Cartesian Beam Pattern" data-ja="直交ビームパターン">Cartesian Beam Pattern</span> <span class="text-slate-500" data-en="magnitude vs angle" data-ja="振幅 対 角度">magnitude vs angle</span></h2>
+          <div class="relative w-full" style="height:300px;">
+            <canvas id="cartesian"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time domain -->
+      <div class="card rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-white mb-2"><span data-en="Time-Domain Signals" data-ja="時間領域信号">Time-Domain Signals</span> <span class="text-slate-500" data-en="at current source angle (2 periods)" data-ja="現在の音源角度（2周期）">at current source angle (2 periods)</span></h2>
+        <div class="relative w-full" style="height:260px;">
+          <canvas id="time"></canvas>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer class="text-center text-xs text-slate-600 mt-6"
+          data-en="Educational simulation · speed of sound = 343 m/s · near-field point-source model (→ plane wave at large r)"
+          data-ja="教育用シミュレーション · 音速 = 343 m/s · 近接界点音源モデル（大きな r で平面波）">Educational simulation · speed of sound = 343 m/s · near-field point-source model (→ plane wave at large r)</footer>
+</div>
+
+<script>
+const C = 343;                      // speed of sound m/s
+const TAU = Math.PI * 2;
+const dbToLin = db => Math.pow(10, db / 20);
+const deg2rad = d => d * Math.PI / 180;
+
+// ---- language (EN / JA) ----
+let LANG = 'en';
+const T = (en, ja) => (LANG === 'ja' ? ja : en);
+
+// ---- State pulled from sliders ----
+const ids = ['spacing','freq','g1','p1','g2','p2','delay','src','dist'];
+const el = {};
+ids.forEach(id => el[id] = document.getElementById(id));
+let currentFs = 48000;                          // sampling rate (Hz)
+
+function readState() {
+  return {
+    d:    parseFloat(el.spacing.value) / 100,   // cm -> m
+    f:    parseFloat(el.freq.value),
+    g1:   dbToLin(parseFloat(el.g1.value)),
+    g2:   dbToLin(parseFloat(el.g2.value)),
+    p1:   deg2rad(parseFloat(el.p1.value)),
+    p2:   deg2rad(parseFloat(el.p2.value)),
+    delay: parseFloat(el.delay.value),          // Mic 2 delay in samples
+    fs:   currentFs,
+    src:  parseFloat(el.src.value),
+    r:    parseFloat(el.dist.value)             // source distance (m)
+  };
+}
+
+// Extra phase on Mic 2 from a pure time delay of N samples: -2π·f·(N/Fs)
+function delayPhase(s) {
+  return -TAU * s.f * (s.delay / s.fs);
+}
+
+// Per-mic amplitude & phase for a point source at distance r, angle theta.
+// Mic 1 sits at (+d/2, 0), Mic 2 at (-d/2, 0). Phase is referenced to the array
+// centre (subtract k*r), amplitude uses 1/distance spreading normalised to r.
+function micPhasors(s, thetaRad) {
+  const k = TAU * s.f / C;
+  const half = s.d / 2;
+  const sx = s.r * Math.cos(thetaRad), sy = s.r * Math.sin(thetaRad);
+  const d1 = Math.hypot(sx - half, sy);
+  const d2 = Math.hypot(sx + half, sy);
+  return {
+    amp1: s.r / d1,
+    amp2: s.r / d2,
+    phi1: -k * (d1 - s.r) + s.p1,
+    phi2: -k * (d2 - s.r) + s.p2 + delayPhase(s),
+  };
+}
+
+// Complex magnitude of summed array response at angle theta (radians)
+function responseMag(s, thetaRad) {
+  const m = micPhasors(s, thetaRad);
+  const re = s.g1 * m.amp1 * Math.cos(m.phi1) + s.g2 * m.amp2 * Math.cos(m.phi2);
+  const im = s.g1 * m.amp1 * Math.sin(m.phi1) + s.g2 * m.amp2 * Math.sin(m.phi2);
+  return Math.hypot(re, im);
+}
+
+// ---------- Charts ----------
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.size = 11;
+
+const cartChart = new Chart(document.getElementById('cartesian'), {
+  type: 'line',
+  data: { datasets: [{ label: 'Response (dB)', data: [], borderColor: '#818cf8',
+           backgroundColor: 'rgba(129,140,248,.12)', borderWidth: 2, pointRadius: 0, fill: true, tension: .15 }] },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    parsing: false,
+    scales: {
+      x: { type: 'linear', min: 0, max: 360, title: { display: true, text: 'Angle (°)' },
+           ticks: { stepSize: 45 }, grid: { color: '#1f2937' } },
+      y: { min: -40, max: 3, title: { display: true, text: 'Normalized magnitude (dB)' }, grid: { color: '#1f2937' } }
+    },
+    plugins: { legend: { display: false }, tooltip: { callbacks: {
+      title: i => `θ = ${i[0].parsed.x.toFixed(0)}°`, label: i => `${i.parsed.y.toFixed(1)} dB` } } }
+  }
+});
+
+const timeChart = new Chart(document.getElementById('time'), {
+  type: 'line',
+  data: { datasets: [
+    { label: 'Mic 1', data: [], borderColor: '#60a5fa', borderWidth: 2, pointRadius: 0, tension: .2 },
+    { label: 'Mic 2', data: [], borderColor: '#fbbf24', borderWidth: 2, pointRadius: 0, tension: .2 },
+    { label: 'Sum',   data: [], borderColor: '#34d399', borderWidth: 1.5, borderDash: [5,4], pointRadius: 0, tension: .2 }
+  ]},
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    scales: {
+      x: { type: 'linear', title: { display: true, text: 'Time (ms)' }, grid: { color: '#1f2937' } },
+      y: { title: { display: true, text: 'Amplitude' }, grid: { color: '#1f2937' }, suggestedMin: -2.2, suggestedMax: 2.2 }
+    },
+    plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 14 } } }
+  }
+});
+
+// ---------- Polar (custom canvas) ----------
+const polarCanvas = document.getElementById('polar');
+const pctx = polarCanvas.getContext('2d');
+
+function magToRadiusFrac(magNorm) {           // dB scale, floor -40 dB
+  const db = 20 * Math.log10(Math.max(magNorm, 1e-9));
+  return Math.min(1, Math.max(0, (db + 40) / 40));
+}
+
+function drawPolar(pattern, maxMag, srcDeg) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = polarCanvas.clientWidth, cssH = polarCanvas.clientHeight;
+  polarCanvas.width = cssW * dpr; polarCanvas.height = cssH * dpr;
+  pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  pctx.clearRect(0, 0, cssW, cssH);
+
+  const cx = cssW / 2, cy = cssH / 2;
+  const R = Math.min(cssW, cssH) / 2 - 26;
+
+  // rings (dB grid: 0,-10,-20,-30,-40 from edge to center)
+  pctx.strokeStyle = '#1f2937'; pctx.fillStyle = '#475569'; pctx.lineWidth = 1;
+  pctx.font = '10px monospace'; pctx.textAlign = 'left'; pctx.textBaseline = 'middle';
+  for (let db = 0; db >= -40; db -= 10) {
+    const r = ((db + 40) / 40) * R;
+    pctx.beginPath(); pctx.arc(cx, cy, r, 0, TAU); pctx.stroke();
+    if (db > -40) pctx.fillText(db + 'dB', cx + 3, cy - r);
+  }
+  // radial spokes + angle labels (0° at right, CCW positive)
+  pctx.textAlign = 'center';
+  for (let ang = 0; ang < 360; ang += 30) {
+    const t = deg2rad(ang);
+    const x = cx + R * Math.cos(t), y = cy - R * Math.sin(t);
+    pctx.strokeStyle = '#1f2937';
+    pctx.beginPath(); pctx.moveTo(cx, cy); pctx.lineTo(x, y); pctx.stroke();
+    pctx.fillStyle = '#64748b';
+    pctx.fillText(ang + '°', cx + (R + 14) * Math.cos(t), cy - (R + 14) * Math.sin(t));
+  }
+  // array axis hint
+  pctx.fillStyle = '#334155'; pctx.font = '10px sans-serif';
+  pctx.fillText(T('◄ array axis ►', '◄ アレイ軸 ►'), cx, cy + R + 16);
+
+  // pattern fill
+  pctx.beginPath();
+  pattern.forEach((m, i) => {
+    const t = deg2rad(i);
+    const r = magToRadiusFrac(m / maxMag) * R;
+    const x = cx + r * Math.cos(t), y = cy - r * Math.sin(t);
+    i === 0 ? pctx.moveTo(x, y) : pctx.lineTo(x, y);
+  });
+  pctx.closePath();
+  pctx.fillStyle = 'rgba(99,102,241,.22)';
+  pctx.strokeStyle = '#818cf8'; pctx.lineWidth = 2;
+  pctx.fill(); pctx.stroke();
+
+  // source direction arrow
+  const ts = deg2rad(srcDeg);
+  const sx = cx + R * Math.cos(ts), sy = cy - R * Math.sin(ts);
+  pctx.strokeStyle = '#34d399'; pctx.fillStyle = '#34d399'; pctx.lineWidth = 2;
+  pctx.beginPath(); pctx.moveTo(cx, cy); pctx.lineTo(sx, sy); pctx.stroke();
+  pctx.beginPath(); pctx.arc(sx, sy, 4, 0, TAU); pctx.fill();
+}
+
+// ---------- Master render ----------
+function render() {
+  const s = readState();
+
+  // readouts
+  document.getElementById('v_spacing').textContent = (s.d * 100).toFixed(1);
+  document.getElementById('v_freq').textContent = s.f.toFixed(0);
+  document.getElementById('v_g1').textContent = parseFloat(el.g1.value).toFixed(1);
+  document.getElementById('v_g2').textContent = parseFloat(el.g2.value).toFixed(1);
+  document.getElementById('v_p1').textContent = el.p1.value;
+  document.getElementById('v_p2').textContent = el.p2.value;
+  document.getElementById('v_delay').textContent = el.delay.value;
+  document.getElementById('v_delayms').textContent = (s.delay / s.fs * 1000).toFixed(3);
+  document.getElementById('v_fs').textContent = (s.fs / 1000).toFixed(0);
+  document.getElementById('v_src').textContent = el.src.value;
+  document.getElementById('v_dist').textContent = s.r.toFixed(2);
+
+  // beam pattern over 0..359 deg
+  const pattern = new Array(360);
+  let maxMag = 1e-9, peakAng = 0;
+  for (let ang = 0; ang < 360; ang++) {
+    const m = responseMag(s, deg2rad(ang));
+    pattern[ang] = m;
+    if (m > maxMag) { maxMag = m; peakAng = ang; }
+  }
+
+  // cartesian (dB, normalized)
+  const cartData = [];
+  for (let ang = 0; ang <= 360; ang++) {
+    const m = pattern[ang % 360] / maxMag;
+    cartData.push({ x: ang, y: Math.max(-40, 20 * Math.log10(Math.max(m, 1e-9))) });
+  }
+  cartChart.data.datasets[0].data = cartData;
+  cartChart.update();
+
+  // polar
+  drawPolar(pattern, maxMag, s.src);
+
+  // metrics
+  const magFront = responseMag(s, deg2rad(0));
+  const magBack  = responseMag(s, deg2rad(180));
+  const fb = 20 * Math.log10(Math.max(magFront, 1e-9) / Math.max(magBack, 1e-9));
+  document.getElementById('m_fb').textContent = (isFinite(fb) ? fb : 0).toFixed(1);
+  document.getElementById('m_peak').textContent = peakAng;
+
+  // time domain at current source angle (near-field amplitudes + phases)
+  const th = deg2rad(s.src);
+  const mp = micPhasors(s, th);
+  document.getElementById('m_dl').textContent = (20 * Math.log10(mp.amp1 / mp.amp2)).toFixed(1);
+  const T = 1 / s.f;                       // period (s)
+  const N = 240, span = 2 * T;             // show 2 periods
+  const d1 = [], d2 = [], dS = [];
+  for (let i = 0; i <= N; i++) {
+    const t = span * i / N;
+    const ms = t * 1000;
+    const v1 = s.g1 * mp.amp1 * Math.sin(TAU * s.f * t + mp.phi1);
+    const v2 = s.g2 * mp.amp2 * Math.sin(TAU * s.f * t + mp.phi2);
+    d1.push({ x: ms, y: v1 });
+    d2.push({ x: ms, y: v2 });
+    dS.push({ x: ms, y: v1 + v2 });
+  }
+  timeChart.data.datasets[0].data = d1;
+  timeChart.data.datasets[1].data = d2;
+  timeChart.data.datasets[2].data = dS;
+  timeChart.options.scales.x.max = span * 1000;
+  timeChart.update();
+}
+
+// ---------- Wire up ----------
+ids.forEach(id => el[id].addEventListener('input', render));
+
+// presets
+const PRESETS = {
+  // omni-ish: tiny spacing, in phase
+  omni:     { spacing: 1,  freq: 1000, g1: 0, p1: 0, g2: 0, p2: 0,   src: 0, dist: 5 },
+  // figure-8: equal gain, 180° opposed -> difference
+  dipole:   { spacing: 5,  freq: 1000, g1: 0, p1: 0, g2: 0, p2: 180, src: 0, dist: 5 },
+  // endfire cardioid: back null tuned for f=1000, d=5cm  (p2 = 180 - 360*f*d/c)
+  cardioid: { spacing: 5,  freq: 1000, g1: 0, p1: 0, g2: 0, p2: 128, src: 0, dist: 5 }
+};
+document.querySelectorAll('.preset').forEach(btn => btn.addEventListener('click', () => {
+  const p = PRESETS[btn.dataset.preset];
+  el.spacing.value = p.spacing; el.freq.value = p.freq;
+  el.g1.value = p.g1; el.p1.value = p.p1; el.g2.value = p.g2; el.p2.value = p.p2;
+  el.src.value = p.src; el.dist.value = p.dist;
+  render();
+}));
+
+// sampling-rate selector
+document.querySelectorAll('.fsbtn').forEach(btn => btn.addEventListener('click', () => {
+  currentFs = parseInt(btn.dataset.fs, 10);
+  document.querySelectorAll('.fsbtn').forEach(b => {
+    const active = b === btn;
+    b.classList.toggle('bg-indigo-600', active);
+    b.classList.toggle('hover:bg-indigo-500', active);
+    b.classList.toggle('bg-slate-700', !active);
+    b.classList.toggle('hover:bg-slate-600', !active);
+  });
+  render();
+}));
+
+window.addEventListener('resize', () => render());
+
+// ---------- language switching ----------
+const enBtn = document.getElementById('enBtn');
+const jaBtn = document.getElementById('jaBtn');
+
+function applyLang() {
+  document.querySelectorAll('[data-en]').forEach(e => {
+    e.textContent = LANG === 'ja' ? (e.dataset.ja || e.dataset.en) : e.dataset.en;
+  });
+}
+function applyChartLang() {
+  cartChart.data.datasets[0].label = T('Response (dB)', '応答 (dB)');
+  cartChart.options.scales.x.title.text = T('Angle (°)', '角度 (°)');
+  cartChart.options.scales.y.title.text = T('Normalized magnitude (dB)', '正規化振幅 (dB)');
+  timeChart.data.datasets[0].label = T('Mic 1', 'マイク1');
+  timeChart.data.datasets[1].label = T('Mic 2', 'マイク2');
+  timeChart.data.datasets[2].label = T('Sum', '合計');
+  timeChart.options.scales.x.title.text = T('Time (ms)', '時間 (ms)');
+  timeChart.options.scales.y.title.text = T('Amplitude', '振幅');
+  cartChart.update(); timeChart.update();
+}
+function setLang(l) {
+  LANG = l;
+  document.documentElement.lang = l;
+  [[enBtn, l === 'en'], [jaBtn, l === 'ja']].forEach(([b, act]) => {
+    b.classList.toggle('bg-indigo-600', act); b.classList.toggle('text-white', act);
+    b.classList.toggle('bg-slate-800', !act); b.classList.toggle('text-slate-300', !act);
+  });
+  try { localStorage.setItem('tmdb-lang', l); } catch (e) {}
+  applyLang(); applyChartLang(); render();
+}
+enBtn.addEventListener('click', () => setLang('en'));
+jaBtn.addEventListener('click', () => setLang('ja'));
+
+let initialLang = 'en';
+try {
+  const saved = localStorage.getItem('tmdb-lang');
+  initialLang = saved || ((navigator.language || '').toLowerCase().startsWith('ja') ? 'ja' : 'en');
+} catch (e) {}
+setLang(initialLang);
+</script>
+</body>
+</html>

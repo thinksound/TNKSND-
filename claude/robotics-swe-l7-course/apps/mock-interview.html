@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mock Interview Trainer — E7 SWE (Product · Technical Leadership)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{ background:#0b1020; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  .pill{ display:inline-block; font-size:11px; font-weight:600; border-radius:999px; padding:1px 9px; }
+  .field{ background:#0d1117; border:1px solid #1f2937; color:#e2e8f0; border-radius:8px; }
+  .field:focus{ outline:none; border-color:#6366f1; }
+  a.lnk{ color:#818cf8; } a.lnk:hover{ color:#a5b4fc; text-decoration:underline; }
+  .btn{ border-radius:8px; font-weight:600; font-size:13px; padding:8px 14px; transition:background .12s,border-color .12s; }
+  .btn-indigo{ background:#4f46e5; color:#fff; } .btn-indigo:hover{ background:#6366f1; }
+  .btn-emerald{ background:#059669; color:#fff; } .btn-emerald:hover{ background:#10b981; }
+  .btn-ghost{ background:#0d1117; border:1px solid #1f2937; color:#cbd5e1; } .btn-ghost:hover{ border-color:#374151; }
+  input[type=range]{ accent-color:#6366f1; }
+  .tabbtn.active{ background:#4f46e5; color:#fff; border-color:#4f46e5; }
+  body.lang-en [lang=ja]{ display:none; }
+  body.lang-ja [lang=en]{ display:none; }
+  #enBtn.active, #jaBtn.active{ background:#4f46e5; color:#fff; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen lang-en">
+<div class="max-w-[1080px] mx-auto px-4 py-7">
+
+  <header class="mb-5">
+    <div class="flex items-start justify-between gap-3">
+      <h1 class="text-3xl font-bold text-white">🎤 <span lang="en">Mock Interview Trainer</span><span lang="ja">模擬面接トレーナー</span></h1>
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs"><button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button><button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button></div>
+    </div>
+    <p class="text-slate-400 mt-1"><span lang="en">Self-driven, timed mock-interview practice for a Meta <b>E7 “Software Engineer, Product (Technical Leadership)”</b> loop — coding, system design, and behavioral rounds, scored against an E7 rubric.</span><span lang="ja">Meta <b>E7「Software Engineer, Product (Technical Leadership)」</b>ループ向けの、自己主導・時間制限つき模擬面接練習 — コーディング・システム設計・行動面接の各ラウンドを、E7 ルーブリックで採点します。</span></p>
+  </header>
+
+  <!-- how to use -->
+  <div class="card rounded-xl p-5 mb-6 border-emerald-500/40">
+    <h2 class="text-lg font-semibold text-emerald-300 mb-2">📋 <span lang="en">How to use (Day 13 — mock day)</span><span lang="ja">使い方（13 日目 — 模擬面接の日）</span></h2>
+    <p class="text-slate-300 text-sm"><span lang="en">Treat this like the real loop. Pick a round, hit <b>Start</b> on a random prompt, and <b>talk out loud the entire time</b> as if an interviewer is in the room — <b>record yourself</b> (phone/screen-recorder) so you can rewatch. Use the scratchpad only for the notes you'd actually write on the whiteboard; do the thinking verbally. When the timer ends, stop, then <b>score yourself honestly</b> against the E7 rubric, log the session, and write down the single top fix to drill next. For a graded run, copy the prompt in the callout and hand it to your AI assistant.</span><span lang="ja">本番のループと同じように臨んでください。ラウンドを選び、ランダムな問題で <b>開始</b> を押し、面接官が部屋にいるつもりで <b>最初から最後まで声に出して話し</b> てください — あとで見返せるよう <b>自分を録画</b>（スマホ／画面録画）しておきましょう。スクラッチパッドはホワイトボードに実際に書く内容のメモだけに使い、思考は口頭で行います。タイマーが終わったら止め、E7 ルーブリックに照らして <b>正直に自己採点</b> し、セッションを記録し、次に重点的に直すべき最重要ポイントを一つ書き留めてください。採点つきで通したい場合は、コールアウト内のプロンプトをコピーして AI アシスタントに渡してください。</span></p>
+  </div>
+
+  <!-- round picker -->
+  <div class="card rounded-xl p-5 mb-6">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="text-lg font-semibold text-white"><span lang="en">1 · Pick a round</span><span lang="ja">1 · ラウンドを選ぶ</span></h2>
+      <div id="roundTabs" class="flex gap-2 flex-wrap"></div>
+    </div>
+    <div class="flex flex-wrap items-end gap-4">
+      <div>
+        <label class="block text-xs text-slate-400 mb-1"><span lang="en">Duration (minutes)</span><span lang="ja">所要時間（分）</span></label>
+        <input id="durInput" type="number" min="1" max="180" class="field px-3 py-2 text-sm w-28">
+      </div>
+      <div class="flex-1 min-w-[220px]">
+        <label class="block text-xs text-slate-400 mb-1"><span lang="en">Prompt</span><span lang="ja">問題</span></label>
+        <select id="promptSelect" class="field px-3 py-2 text-sm w-full"></select>
+      </div>
+      <button id="randomBtn" class="btn btn-ghost">🎲 <span lang="en">Random</span><span lang="ja">ランダム</span></button>
+      <button id="startBtn" class="btn btn-indigo">▶ <span lang="en">Start round</span><span lang="ja">ラウンド開始</span></button>
+    </div>
+  </div>
+
+  <!-- active round -->
+  <div id="activePanel" class="card rounded-xl p-5 mb-6 hidden">
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+      <div>
+        <span id="activeType" class="pill"></span>
+        <span id="activeDiff" class="pill bg-slate-700 text-slate-200 ml-1"></span>
+      </div>
+      <div id="timerDisplay" class="text-4xl font-bold tabular-nums text-white">00:00</div>
+    </div>
+    <div class="mb-3">
+      <div id="activePromptName" class="text-lg font-semibold text-white"></div>
+      <div id="activePromptDetail" class="text-sm text-slate-400 mt-1"></div>
+    </div>
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button id="tStart" class="btn btn-emerald"><span lang="en">Start timer</span><span lang="ja">タイマー開始</span></button>
+      <button id="tPause" class="btn btn-ghost"><span lang="en">Pause</span><span lang="ja">一時停止</span></button>
+      <button id="tReset" class="btn btn-ghost"><span lang="en">Reset</span><span lang="ja">リセット</span></button>
+      <button id="finishBtn" class="btn btn-indigo ml-auto"><span lang="en">Finish &amp; score ▼</span><span lang="ja">終了して採点 ▼</span></button>
+    </div>
+    <label class="block text-xs text-slate-400 mb-1"><span lang="en">Scratchpad (your working notes for this round)</span><span lang="ja">スクラッチパッド（このラウンドの作業メモ）</span></label>
+    <textarea id="scratch" rows="6" class="field w-full px-3 py-2 text-sm font-mono" placeholder="Think out loud — jot only what you'd put on the board…"></textarea>
+  </div>
+
+  <!-- scoring -->
+  <div id="scorePanel" class="card rounded-xl p-5 mb-6 hidden">
+    <h2 class="text-lg font-semibold text-white mb-1"><span lang="en">2 · Score yourself — E7 rubric</span><span lang="ja">2 · 自己採点 — E7 ルーブリック</span></h2>
+    <p class="text-slate-400 text-sm mb-4"><span lang="en">Rate each dimension 1–5. Be honest; the value is in spotting gaps.</span><span lang="ja">各項目を 1〜5 で評価してください。正直に — 価値はギャップを見つけることにあります。</span></p>
+    <div id="rubric" class="space-y-4 mb-4"></div>
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+      <div class="text-sm text-slate-300"><span lang="en">Total:</span><span lang="ja">合計:</span> <span id="scoreTotal" class="text-white font-bold text-lg">0</span> / <span id="scoreMax">0</span>
+        <span id="scorePct" class="text-slate-500 ml-1"></span></div>
+      <div id="verdict" class="pill"></div>
+    </div>
+    <label class="block text-xs text-slate-400 mb-1"><span lang="en">Top fix for next time (one line)</span><span lang="ja">次回の最重要改善点（一行で）</span></label>
+    <input id="topFix" class="field w-full px-3 py-2 text-sm mb-3" placeholder="e.g. State complexity before coding; drive the requirements myself.">
+    <div class="flex gap-2">
+      <button id="saveSession" class="btn btn-emerald">💾 <span lang="en">Save session</span><span lang="ja">セッションを保存</span></button>
+      <button id="cancelScore" class="btn btn-ghost"><span lang="en">Cancel</span><span lang="ja">キャンセル</span></button>
+    </div>
+  </div>
+
+  <!-- AI mock callout -->
+  <div class="card rounded-xl p-5 mb-6 border-indigo-500/50">
+    <h2 class="text-lg font-semibold text-indigo-300 mb-2">🤖 <span lang="en">Want a REAL scored mock?</span><span lang="ja">本格的な採点つき模擬面接が欲しい？</span></h2>
+    <p class="text-slate-300 text-sm mb-3"><span lang="en">Copy the prompt below and paste it to your AI assistant. It will run a timed, E7-rubric mock interview on the prompt you’ve selected and grade you on the spot.</span><span lang="ja">下のプロンプトをコピーして AI アシスタントに貼り付けてください。選択した問題で、時間制限つき・E7 ルーブリックの模擬面接を行い、その場で採点してくれます。</span></p>
+    <pre id="aiPrompt" class="field w-full px-3 py-3 text-xs whitespace-pre-wrap text-slate-300 mb-3"></pre>
+    <button id="copyAi" class="btn btn-indigo">📋 <span lang="en">Copy prompt</span><span lang="ja">プロンプトをコピー</span></button>
+    <span id="copyMsg" class="text-emerald-400 text-sm ml-2"></span>
+  </div>
+
+  <!-- history -->
+  <div class="card rounded-xl p-5 mb-10">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+      <h2 class="text-lg font-semibold text-white"><span lang="en">3 · Session history</span><span lang="ja">3 · セッション履歴</span></h2>
+      <div id="avgRow" class="text-xs text-slate-400 flex gap-3 flex-wrap"></div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="text-slate-400 text-left border-b border-slate-700">
+          <th class="py-2 pr-3"><span lang="en">Date</span><span lang="ja">日付</span></th><th class="py-2 pr-3"><span lang="en">Round</span><span lang="ja">ラウンド</span></th><th class="py-2 pr-3"><span lang="en">Prompt</span><span lang="ja">問題</span></th>
+          <th class="py-2 pr-3"><span lang="en">Score</span><span lang="ja">スコア</span></th><th class="py-2 pr-3"><span lang="en">Top fix</span><span lang="ja">最重要改善点</span></th><th class="py-2"></th>
+        </tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <p id="histEmpty" class="text-slate-500 text-sm mt-2"><span lang="en">No sessions logged yet. Run a round and save it.</span><span lang="ja">まだ記録されたセッションはありません。ラウンドを実施して保存してください。</span></p>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+let LANG='en'; const T=(en,ja)=>LANG==='ja'?ja:en;
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+// ---------- Data ----------
+const ROUNDS = {
+  coding: {
+    label: "Coding", labelJa: "コーディング", color: "bg-indigo-500/20 text-indigo-300", defaultDur: 30,
+    prompts: [
+      { name: "Two Sum / Subarray Sum Equals K", detail: "Find pairs/subarrays hitting a target — hash-map complements.", detailJa: "目標値になるペア／部分配列を見つける — ハッシュマップで補数を管理。", meta: { pattern: "Hash map", difficulty: "Easy" }, metaJa: { pattern: "ハッシュマップ", difficulty: "易" } },
+      { name: "Valid Parentheses / Min Remove to Make Valid", detail: "Balance/clean a bracket string.", detailJa: "括弧文字列の対応をとる／不要な括弧を除去する。", meta: { pattern: "Stack", difficulty: "Easy" }, metaJa: { pattern: "スタック", difficulty: "易" } },
+      { name: "Merge Intervals", detail: "Merge overlapping intervals after sorting.", detailJa: "ソート後に重なり合う区間をマージする。", meta: { pattern: "Sorting + sweep", difficulty: "Medium" }, metaJa: { pattern: "ソート＋走査", difficulty: "中" } },
+      { name: "Kth Largest / Top K Frequent Elements", detail: "Return the k most significant elements.", detailJa: "最も重要な上位 k 個の要素を返す。", meta: { pattern: "Heap / quickselect", difficulty: "Medium" }, metaJa: { pattern: "ヒープ／クイックセレクト", difficulty: "中" } },
+      { name: "Number of Islands", detail: "Count connected components in a grid.", detailJa: "グリッド内の連結成分の数を数える。", meta: { pattern: "BFS/DFS grid", difficulty: "Medium" }, metaJa: { pattern: "グリッド BFS/DFS", difficulty: "中" } },
+      { name: "LRU Cache", detail: "Design a fixed-capacity O(1) get/put cache.", detailJa: "容量固定で get/put が O(1) のキャッシュを設計する。", meta: { pattern: "Hash map + DLL", difficulty: "Medium" }, metaJa: { pattern: "ハッシュマップ＋双方向連結リスト", difficulty: "中" } },
+      { name: "Course Schedule", detail: "Can all courses finish given prerequisites?", detailJa: "前提条件を満たして全コースを履修完了できるか。", meta: { pattern: "Topological sort", difficulty: "Medium" }, metaJa: { pattern: "トポロジカルソート", difficulty: "中" } },
+      { name: "Word Break", detail: "Can a string be segmented from a dictionary?", detailJa: "辞書の単語で文字列を分割できるか。", meta: { pattern: "DP", difficulty: "Medium" }, metaJa: { pattern: "動的計画法", difficulty: "中" } },
+      { name: "Lowest Common Ancestor of a Binary Tree", detail: "Find the LCA of two nodes.", detailJa: "2 つのノードの最小共通祖先（LCA）を求める。", meta: { pattern: "Tree recursion", difficulty: "Medium" }, metaJa: { pattern: "木の再帰", difficulty: "中" } },
+      { name: "Serialize and Deserialize Binary Tree", detail: "Encode a tree to a string and back.", detailJa: "木を文字列にエンコードし、また復元する。", meta: { pattern: "Tree traversal", difficulty: "Hard" }, metaJa: { pattern: "木の走査", difficulty: "難" } },
+      { name: "Merge k Sorted Lists", detail: "Combine k sorted linked lists into one.", detailJa: "k 個のソート済み連結リストを 1 つに統合する。", meta: { pattern: "Heap / divide & conquer", difficulty: "Hard" }, metaJa: { pattern: "ヒープ／分割統治", difficulty: "難" } }
+    ]
+  },
+  system: {
+    label: "System Design", labelJa: "システム設計", color: "bg-emerald-500/20 text-emerald-300", defaultDur: 45,
+    prompts: [
+      { name: "Design the News Feed", detail: "Rank & deliver a personalized feed at billions of users (fan-out, ranking).", detailJa: "数十億ユーザー規模でパーソナライズされたフィードをランク付けして配信する（ファンアウト、ランキング）。", meta: { area: "Social", difficulty: "Hard" }, metaJa: { area: "ソーシャル", difficulty: "難" } },
+      { name: "Design Messenger / Chat", detail: "1:1 and group chat, delivery/read receipts, presence, online status.", detailJa: "1 対 1・グループチャット、配信／既読通知、プレゼンス、オンライン状態。", meta: { area: "Realtime", difficulty: "Hard" }, metaJa: { area: "リアルタイム", difficulty: "難" } },
+      { name: "Design a Notification System", detail: "Multi-channel (push/email/SMS) fan-out with dedup & rate limits.", detailJa: "マルチチャネル（プッシュ／メール／SMS）のファンアウト、重複排除とレート制限つき。", meta: { area: "Async / fan-out", difficulty: "Medium" }, metaJa: { area: "非同期／ファンアウト", difficulty: "中" } },
+      { name: "Design a Distributed Rate Limiter", detail: "Limit requests per user/key across a fleet.", detailJa: "サーバ群全体でユーザー／キーごとにリクエストを制限する。", meta: { area: "Infra", difficulty: "Medium" }, metaJa: { area: "インフラ", difficulty: "中" } },
+      { name: "Design Search Typeahead / Autocomplete", detail: "Sub-100ms prefix suggestions at scale.", detailJa: "大規模で 100ms 未満の前方一致候補を返す。", meta: { area: "Search", difficulty: "Medium" }, metaJa: { area: "検索", difficulty: "中" } },
+      { name: "Design Media Upload + CDN Delivery", detail: "Ingest, transcode, and globally serve photos/video.", detailJa: "写真／動画を取り込み、トランスコードし、グローバルに配信する。", meta: { area: "Media / CDN", difficulty: "Hard" }, metaJa: { area: "メディア／CDN", difficulty: "難" } },
+      { name: "Design a URL Shortener / ID Generation", detail: "Unique short IDs, redirects, analytics at scale.", detailJa: "一意の短縮 ID、リダイレクト、大規模な解析。", meta: { area: "Infra", difficulty: "Medium" }, metaJa: { area: "インフラ", difficulty: "中" } },
+      { name: "Design Live Comments / Reactions", detail: "High-write realtime stream on a viral live video.", detailJa: "バズったライブ動画上での高書き込みのリアルタイムストリーム。", meta: { area: "Realtime", difficulty: "Hard" }, metaJa: { area: "リアルタイム", difficulty: "難" } },
+      { name: "Design Robot Fleet Telemetry + OTA Updates", detail: "Ingest telemetry from 100k robots; stage & roll out OTA firmware safely.", detailJa: "10 万台のロボットからテレメトリを取り込み、OTA ファームウェアを安全に段階的展開する。", meta: { area: "Robotics", difficulty: "Hard" }, metaJa: { area: "ロボティクス", difficulty: "難" } },
+      { name: "Design a Perception / Teleop Data Plane", detail: "Stream low-latency sensor+video for teleoperation; record for ML training.", detailJa: "遠隔操作向けに低遅延でセンサー＋映像をストリーミングし、ML 学習用に記録する。", meta: { area: "Robotics", difficulty: "Hard" }, metaJa: { area: "ロボティクス", difficulty: "難" } }
+    ]
+  },
+  behavioral: {
+    label: "Behavioral", labelJa: "行動面接", color: "bg-amber-500/20 text-amber-300", defaultDur: 10,
+    prompts: [
+      { name: "Multi-year technical roadmap", detail: "Tell me about a multi-year strategy you set and drove to delivery.", nameJa: "複数年の技術ロードマップ", detailJa: "あなたが策定し、実行までやり切った複数年の戦略について教えてください。", meta: { signal: "Vision / planning", difficulty: "E7" }, metaJa: { signal: "ビジョン／計画", difficulty: "E7" } },
+      { name: "Cross-org influence", detail: "Describe driving a technical direction across teams you don't own.", nameJa: "組織横断での影響力", detailJa: "自分の管轄外のチームをまたいで技術的方向性を牽引した経験を説明してください。", meta: { signal: "Influence", difficulty: "E7" }, metaJa: { signal: "影響力", difficulty: "E7" } },
+      { name: "Influencing executives", detail: "A time you changed a leader's/exec's mind with a technical argument.", nameJa: "経営層への影響", detailJa: "技術的な論拠でリーダーや経営層の考えを変えた経験。", meta: { signal: "Exec influence", difficulty: "E7" }, metaJa: { signal: "経営層への影響", difficulty: "E7" } },
+      { name: "Data-driven decision", detail: "A high-stakes call you made primarily from data/metrics.", nameJa: "データ駆動の意思決定", detailJa: "主にデータ／指標に基づいて下した、重大な判断。", meta: { signal: "Judgment", difficulty: "E7" }, metaJa: { signal: "判断力", difficulty: "E7" } },
+      { name: "Reducing tech debt", detail: "How you justified and drove a large debt-paydown / migration.", nameJa: "技術的負債の削減", detailJa: "大規模な負債返済／移行をどう正当化し牽引したか。", meta: { signal: "Engineering excellence", difficulty: "E7" }, metaJa: { signal: "エンジニアリングの卓越性", difficulty: "E7" } },
+      { name: "AI-tooling impact", detail: "Where you applied AI/automation to multiply team productivity.", nameJa: "AI ツールによるインパクト", detailJa: "AI／自動化を適用してチームの生産性を何倍にも高めた事例。", meta: { signal: "Innovation", difficulty: "E7" }, metaJa: { signal: "イノベーション", difficulty: "E7" } },
+      { name: "Navigating ambiguity", detail: "A vague problem you scoped and made concrete progress on.", nameJa: "曖昧さへの対処", detailJa: "曖昧な問題を切り分け、具体的な進展を生んだ経験。", meta: { signal: "Ambiguity", difficulty: "E7" }, metaJa: { signal: "曖昧さ", difficulty: "E7" } },
+      { name: "Resolving conflict", detail: "A serious technical/people disagreement you resolved.", nameJa: "対立の解消", detailJa: "技術面または対人面での深刻な意見の対立を解消した経験。", meta: { signal: "Collaboration", difficulty: "E7" }, metaJa: { signal: "協働", difficulty: "E7" } },
+      { name: "Mentoring / growing senior engineers", detail: "How you leveled up other senior/staff engineers.", nameJa: "シニアエンジニアの育成", detailJa: "他のシニア／スタッフエンジニアをどう成長させたか。", meta: { signal: "Developing others", difficulty: "E7" }, metaJa: { signal: "人材育成", difficulty: "E7" } },
+      { name: "A failure & what you changed", detail: "A significant failure you owned and the systemic change you made.", nameJa: "失敗と、そこから変えたこと", detailJa: "自ら責任を負った重大な失敗と、それを受けて行った仕組みの変更。", meta: { signal: "Ownership / growth", difficulty: "E7" }, metaJa: { signal: "オーナーシップ／成長", difficulty: "E7" } }
+    ]
+  }
+};
+
+const RUBRICS = {
+  coding: [
+    ["Correctness", "Working solution that handles the core cases.", "正確性", "主要なケースを処理する、動作する解法。"],
+    ["Complexity", "Optimal/justified time & space; stated up front.", "計算量", "最適または根拠ある時間・空間計算量を、最初に明言。"],
+    ["Communication", "Thought out loud; clarified before coding.", "コミュニケーション", "声に出して思考し、コーディング前に確認した。"],
+    ["Testing / edge cases", "Walked through tests, nulls, empties, overflow.", "テスト／エッジケース", "テスト、null、空、オーバーフローを検証した。"],
+    ["Code clarity", "Clean, readable, well-named, compilable code.", "コードの明瞭さ", "整然として読みやすく、命名が良くコンパイル可能なコード。"]
+  ],
+  system: [
+    ["Requirements framing", "Clarified functional + non-functional reqs, scope.", "要件の整理", "機能・非機能要件とスコープを明確化した。"],
+    ["Estimation", "Back-of-envelope QPS/storage/bandwidth math.", "概算見積もり", "QPS／ストレージ／帯域の概算計算。"],
+    ["Architecture", "Coherent end-to-end design with clear components.", "アーキテクチャ", "構成要素が明確な、一貫したエンドツーエンド設計。"],
+    ["Scale & bottlenecks", "Sharding, caching, hotspots, failure modes.", "スケールとボトルネック", "シャーディング、キャッシュ、ホットスポット、障害モード。"],
+    ["Tradeoffs", "Named alternatives and justified the choice.", "トレードオフ", "代替案を挙げ、選択の根拠を示した。"],
+    ["Communication", "Drove the discussion; structured & clear.", "コミュニケーション", "議論を主導し、構造的かつ明確だった。"]
+  ],
+  behavioral: [
+    ["Scope & impact", "E7-altitude scope; quantified business/tech impact.", "スコープとインパクト", "E7 相当のスコープと、定量化した事業・技術インパクト。"],
+    ["Structure (STAR)", "Clear Situation-Task-Action-Result arc.", "構成（STAR）", "状況・課題・行動・結果の明確な流れ。"],
+    ["Ownership ('I' vs 'we')", "Made your specific leadership unmistakable.", "オーナーシップ（「私」対「私たち」）", "自分自身のリーダーシップを明確に示した。"],
+    ["Data & metrics", "Backed claims with numbers and outcomes.", "データと指標", "主張を数値と成果で裏付けた。"],
+    ["Leadership", "Showed influence, judgment, and developing others.", "リーダーシップ", "影響力、判断力、人材育成を示した。"]
+  ]
+};
+
+// ---------- State ----------
+let curType = LS.get("mock_curType", "coding");
+let curPrompt = null;          // {name, detail, meta}
+let curDur = 0;                // seconds configured for round
+let remaining = 0;            // seconds left
+let timerId = null;
+let running = false;
+
+const $ = id => document.getElementById(id);
+
+// ---------- i18n helpers ----------
+function roundLabel(k){ return T(ROUNDS[k].label, ROUNDS[k].labelJa); }
+function promptName(p){ return T(p.name, p.nameJa || p.name); }
+function promptDetail(p){ return T(p.detail, p.detailJa || p.detail); }
+function rubricName(d){ return T(d[0], d[2]); }
+function rubricDesc(d){ return T(d[1], d[3]); }
+
+// ---------- Round tabs ----------
+function renderTabs(){
+  const wrap = $("roundTabs"); wrap.innerHTML = "";
+  Object.keys(ROUNDS).forEach(k => {
+    const b = document.createElement("button");
+    b.className = "tabbtn btn btn-ghost" + (k===curType ? " active" : "");
+    b.textContent = roundLabel(k);
+    b.onclick = () => { curType = k; LS.set("mock_curType", k); syncType(); };
+    wrap.appendChild(b);
+  });
+}
+function syncType(){
+  renderTabs();
+  $("durInput").value = LS.get("mock_dur_"+curType, ROUNDS[curType].defaultDur);
+  fillPromptSelect();
+  updateAiPrompt();
+}
+function fillPromptSelect(){
+  const sel = $("promptSelect"); sel.innerHTML = "";
+  ROUNDS[curType].prompts.forEach((p, i) => {
+    const o = document.createElement("option");
+    o.value = i; o.textContent = promptName(p);
+    sel.appendChild(o);
+  });
+  sel.onchange = updateAiPrompt;
+}
+function selectedPrompt(){
+  return ROUNDS[curType].prompts[+$("promptSelect").value] || ROUNDS[curType].prompts[0];
+}
+function metaStr(p){ const m = (LANG==='ja' && p.metaJa) ? p.metaJa : p.meta; return Object.values(m).join(" · "); }
+
+// ---------- AI callout ----------
+function updateAiPrompt(){
+  const p = selectedPrompt();
+  const dur = $("durInput").value || ROUNDS[curType].defaultDur;
+  const dims = RUBRICS[curType].map(rubricName).join(T(", ", "、"));
+  $("aiPrompt").textContent = T(
+`Act as a Meta E7 ("SWE, Product / Technical Leadership") interviewer. Run a strict, timed ${dur}-minute ${roundLabel(curType)} mock interview with me.
+
+Prompt: ${promptName(p)} — ${promptDetail(p)} (${metaStr(p)})
+
+Rules:
+- Open by stating the time limit, then let me drive. Ask probing follow-ups as a real interviewer would; do not solve it for me.
+- After time is up, grade me 1-5 on each E7 ${roundLabel(curType)} rubric dimension (${dims}), give a total, an E7-calibrated verdict (Strong Hire / Hire / Lean Hire / No Hire), and the single highest-leverage fix.`,
+`Meta の E7（「SWE, Product / Technical Leadership」）面接官として振る舞ってください。私と、時間制限つきで厳格な ${dur} 分間の${roundLabel(curType)}模擬面接を実施してください。
+
+問題: ${promptName(p)} — ${promptDetail(p)}（${metaStr(p)}）
+
+ルール:
+- まず制限時間を伝え、その後は私に主導させてください。本物の面接官のように掘り下げる追加質問をし、私の代わりに解かないでください。
+- 時間切れになったら、E7 の${roundLabel(curType)}ルーブリックの各項目（${dims}）について 1〜5 で採点し、合計、E7 基準の判定（Strong Hire / Hire / Lean Hire / No Hire）、および最も効果の高い改善点を一つ示してください。`);
+}
+
+// ---------- Timer ----------
+function fmt(s){ const m = Math.floor(s/60), ss = s%60; return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0"); }
+function paintTimer(){
+  $("timerDisplay").textContent = fmt(Math.max(0, remaining));
+  $("timerDisplay").className = "text-4xl font-bold tabular-nums " + (remaining<=30 && remaining>0 ? "text-rose-400" : remaining<=0 ? "text-rose-500" : "text-white");
+}
+function tick(){
+  remaining--;
+  paintTimer();
+  if(remaining <= 0){ stopTimer(); $("timerDisplay").textContent = "TIME"; }
+}
+function startTimer(){ if(running||remaining<=0) return; running = true; timerId = setInterval(tick, 1000); }
+function stopTimer(){ running = false; if(timerId){ clearInterval(timerId); timerId = null; } }
+function resetTimer(){ stopTimer(); remaining = curDur; paintTimer(); }
+
+// ---------- Start round ----------
+function startRound(){
+  curPrompt = selectedPrompt();
+  const mins = Math.max(1, Math.min(180, parseInt($("durInput").value)||ROUNDS[curType].defaultDur));
+  LS.set("mock_dur_"+curType, mins);
+  curDur = mins*60; remaining = curDur;
+  $("activeType").textContent = roundLabel(curType);
+  $("activeType").className = "pill " + ROUNDS[curType].color;
+  $("activeDiff").textContent = metaStr(curPrompt);
+  $("activePromptName").textContent = promptName(curPrompt);
+  $("activePromptDetail").textContent = promptDetail(curPrompt);
+  $("scratch").value = "";
+  paintTimer();
+  $("activePanel").classList.remove("hidden");
+  $("scorePanel").classList.add("hidden");
+  $("activePanel").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+// ---------- Scoring ----------
+function buildRubric(){
+  const wrap = $("rubric"); wrap.innerHTML = "";
+  const dims = RUBRICS[curType];
+  $("scoreMax").textContent = dims.length*5;
+  dims.forEach((d, i) => {
+    const row = document.createElement("div");
+    row.innerHTML =
+      `<div class="flex items-center justify-between mb-1">
+         <div><span class="text-slate-200 font-medium text-sm">${rubricName(d)}</span>
+              <span class="text-slate-500 text-xs ml-2">${rubricDesc(d)}</span></div>
+         <span class="text-white font-semibold text-sm tabular-nums" id="rv${i}">3</span>
+       </div>
+       <input type="range" min="1" max="5" value="3" id="rs${i}" class="w-full">`;
+    wrap.appendChild(row);
+    row.querySelector("#rs"+i).addEventListener("input", e => {
+      $("rv"+i).textContent = e.target.value; computeScore();
+    });
+  });
+  computeScore();
+}
+function computeScore(){
+  const dims = RUBRICS[curType]; let t = 0;
+  for(let i=0;i<dims.length;i++) t += +$("rs"+i).value;
+  const max = dims.length*5, pct = Math.round(100*t/max);
+  $("scoreTotal").textContent = t;
+  $("scorePct").textContent = "("+pct+"%)";
+  const v = $("verdict");
+  let label, disp, cls;
+  if(pct>=90){ label="Strong Hire"; disp=T("Strong Hire","Strong Hire（強い採用）"); cls="bg-emerald-500/20 text-emerald-300"; }
+  else if(pct>=78){ label="Hire"; disp=T("Hire","Hire（採用）"); cls="bg-emerald-500/20 text-emerald-300"; }
+  else if(pct>=64){ label="Lean Hire"; disp=T("Lean Hire","Lean Hire（やや採用寄り）"); cls="bg-amber-500/20 text-amber-300"; }
+  else{ label="No Hire — keep drilling"; disp=T("No Hire — keep drilling","No Hire — 練習を続けよう"); cls="bg-rose-500/20 text-rose-300"; }
+  v.textContent = disp; v.className = "pill " + cls;
+  return { total: t, max, pct, verdict: label };
+}
+function openScore(){
+  stopTimer();
+  buildRubric();
+  $("scorePanel").classList.remove("hidden");
+  $("topFix").value = "";
+  $("scorePanel").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+// ---------- History ----------
+function sessions(){ return LS.get("mock_sessions", []); }
+function saveSessions(arr){ LS.set("mock_sessions", arr); }
+function saveSession(){
+  const s = computeScore();
+  const arr = sessions();
+  arr.unshift({
+    id: Date.now(),
+    date: new Date().toISOString().slice(0,10),
+    type: curType,
+    typeLabel: ROUNDS[curType].label,
+    prompt: curPrompt ? curPrompt.name : selectedPrompt().name,
+    total: s.total, max: s.max, pct: s.pct, verdict: s.verdict,
+    topFix: $("topFix").value.trim()
+  });
+  saveSessions(arr);
+  $("scorePanel").classList.add("hidden");
+  $("activePanel").classList.add("hidden");
+  renderHistory();
+  document.querySelector("#histBody")?.scrollIntoView({behavior:"smooth", block:"center"});
+}
+function deleteSession(id){
+  saveSessions(sessions().filter(s => s.id !== id));
+  renderHistory();
+}
+function renderHistory(){
+  const arr = sessions(), body = $("histBody");
+  body.innerHTML = "";
+  $("histEmpty").style.display = arr.length ? "none" : "";
+  arr.forEach(s => {
+    const tr = document.createElement("tr");
+    tr.className = "border-b border-slate-800";
+    tr.innerHTML =
+      `<td class="py-2 pr-3 text-slate-400 whitespace-nowrap">${s.date}</td>
+       <td class="py-2 pr-3"><span class="pill ${ROUNDS[s.type]?ROUNDS[s.type].color:'bg-slate-700 text-slate-200'}">${ROUNDS[s.type]?roundLabel(s.type):esc(s.typeLabel)}</span></td>
+       <td class="py-2 pr-3 text-slate-200">${esc(s.prompt)}</td>
+       <td class="py-2 pr-3 whitespace-nowrap text-slate-200">${s.total}/${s.max} <span class="text-slate-500">(${s.pct}%)</span></td>
+       <td class="py-2 pr-3 text-slate-400">${esc(s.topFix||"—")}</td>
+       <td class="py-2 text-right"></td>`;
+    const del = document.createElement("button");
+    del.className = "btn btn-ghost"; del.textContent = "✕"; del.style.padding = "2px 8px";
+    del.onclick = () => deleteSession(s.id);
+    tr.lastElementChild.appendChild(del);
+    body.appendChild(tr);
+  });
+  // running averages
+  const avg = $("avgRow"); avg.innerHTML = "";
+  Object.keys(ROUNDS).forEach(k => {
+    const subset = arr.filter(s => s.type === k);
+    if(!subset.length) return;
+    const a = Math.round(subset.reduce((x,s)=>x+s.pct,0)/subset.length);
+    const span = document.createElement("span");
+    span.innerHTML = `<span class="pill ${ROUNDS[k].color}">${roundLabel(k)}</span> ${T("avg","平均")} <b class="text-slate-200">${a}%</b> <span class="text-slate-600">(${subset.length})</span>`;
+    avg.appendChild(span);
+  });
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// ---------- Wire up ----------
+$("startBtn").onclick = startRound;
+$("randomBtn").onclick = () => {
+  const n = ROUNDS[curType].prompts.length;
+  $("promptSelect").value = Math.floor(Math.random()*n);
+  updateAiPrompt();
+};
+$("durInput").addEventListener("input", updateAiPrompt);
+$("tStart").onclick = startTimer;
+$("tPause").onclick = stopTimer;
+$("tReset").onclick = resetTimer;
+$("finishBtn").onclick = openScore;
+$("saveSession").onclick = saveSession;
+$("cancelScore").onclick = () => $("scorePanel").classList.add("hidden");
+$("copyAi").onclick = () => {
+  const txt = $("aiPrompt").textContent;
+  const done = () => { $("copyMsg").textContent = T("Copied!","コピーしました！"); setTimeout(()=>$("copyMsg").textContent="",1800); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done, () => fallbackCopy(txt, done));
+  } else { fallbackCopy(txt, done); }
+};
+function fallbackCopy(txt, cb){
+  const ta = document.createElement("textarea"); ta.value = txt;
+  ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta);
+  ta.select(); try{ document.execCommand("copy"); }catch(e){} document.body.removeChild(ta); cb();
+}
+
+// ---------- Language ----------
+function applyLang(){
+  document.documentElement.lang = LANG;
+  $("scratch").placeholder = T("Think out loud — jot only what you'd put on the board…","声に出して考えよう — ボードに書く内容だけメモする…");
+  $("topFix").placeholder = T("e.g. State complexity before coding; drive the requirements myself.","例: コーディング前に計算量を明言する。要件は自分から主導する。");
+}
+function setLang(l){
+  LANG = (l==='ja') ? 'ja' : 'en';
+  document.body.classList.toggle('lang-ja', LANG==='ja');
+  document.body.classList.toggle('lang-en', LANG==='en');
+  $("enBtn").classList.toggle('active', LANG==='en');
+  $("jaBtn").classList.toggle('active', LANG==='ja');
+  try{ localStorage.setItem('course-lang', LANG); }catch(e){}
+  applyLang();
+  // re-render localized dynamic content
+  syncType();
+  if(curPrompt){
+    $("activeType").textContent = roundLabel(curType);
+    $("activeDiff").textContent = metaStr(curPrompt);
+    $("activePromptName").textContent = promptName(curPrompt);
+    $("activePromptDetail").textContent = promptDetail(curPrompt);
+  }
+  if(!$("scorePanel").classList.contains("hidden")) buildRubric();
+  renderHistory();
+}
+$("enBtn").onclick = () => setLang('en');
+$("jaBtn").onclick = () => setLang('ja');
+
+// init
+let savedLang = null;
+try{ savedLang = localStorage.getItem('course-lang'); }catch(e){}
+const initLang = savedLang || ((navigator.language||'').toLowerCase().startsWith('ja') ? 'ja' : 'en');
+setLang(initLang);
+</script>
+</body>
+</html>

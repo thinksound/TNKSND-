@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiplicative (Hippioid) Beamforming — Reality-Check Simulator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  html,body{ background:#0b1020; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:5px; border-radius:9px; background:#1e293b; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:16px;height:16px;border-radius:50%;background:#6366f1;cursor:pointer;border:2px solid #c7d2fe; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  select{ background:#0d1117;color:#cbd5e1;border:1px solid #1f2937;border-radius:7px;padding:5px 7px;font-size:12px;width:100%; }
+  body.lang-en [lang=ja]{ display:none; }
+  body.lang-ja [lang=en]{ display:none; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen lang-en">
+<div class="max-w-[1500px] mx-auto px-4 py-6">
+
+  <header class="mb-5 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight"
+          data-en="🎛️ Multiplicative (Hippioid) Beamforming — Reality-Check Simulator"
+          data-ja="🎛️ 乗算型（ヒッポイド）ビームフォーミング — 現実検証シミュレータ">🎛️ Multiplicative (Hippioid) Beamforming — Reality-Check Simulator</h1>
+      <p class="text-slate-400 text-sm mt-1 max-w-3xl"
+         data-en="Explore C×Dⁿ products on a 3D array — but with the real-world penalties switched on: mic/ATF mismatch, white-noise gain (WNG), diffuse noise, reverb & reflections, and a side-by-side MVDR reference. The pretty free-field patterns and the honest ones are shown together."
+         data-ja="3Dアレイ上で C×Dⁿ 積を探求 — ただし現実世界のペナルティをオンに：マイク/ATF 不整合、白色雑音利得（WNG）、拡散雑音、残響・反射、そして MVDR との並列比較。自由空間の美しいパターンと正直なパターンを同時に表示します。">Explore C×Dⁿ products on a 3D array — with real-world penalties switched on.</p>
+    </div>
+    <div class="shrink-0 flex items-center gap-2">
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button>
+        <button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button>
+      </div>
+      <a href="instructions.html" class="px-3 py-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium" data-en="📖 Instructions" data-ja="📖 説明">📖 Instructions</a>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- ============ CONTROLS ============ -->
+    <section class="lg:col-span-1 card rounded-xl p-5 space-y-4 self-start">
+      <h2 class="text-lg font-semibold text-white" data-en="Array &amp; beam" data-ja="アレイとビーム">Array &amp; beam</h2>
+
+      <div>
+        <label class="text-sm text-slate-300" data-en="Microphone array (3D)" data-ja="マイクアレイ（3D）">Microphone array (3D)</label>
+        <select id="arr">
+          <option value="tetra" data-en="4-mic tetrahedron (true 3D)" data-ja="4マイク 正四面体（真の3D）">4-mic tetrahedron (true 3D)</option>
+          <option value="square" data-en="4-mic square (planar)" data-ja="4マイク 正方形（平面）">4-mic square (planar)</option>
+          <option value="endfire" data-en="2-mic endfire (the deck's case)" data-ja="2マイク エンドファイア（資料の構成）">2-mic endfire (the deck's case)</option>
+        </select>
+        <p class="text-[11px] text-slate-500 mt-1" data-en="Multiplicative beam uses mics 0–1 (one baseline); MVDR uses all mics." data-ja="乗算型ビームはマイク0–1（1基線）を使用。MVDR は全マイクを使用。">Multiplicative beam uses mics 0–1; MVDR uses all mics.</p>
+      </div>
+
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Baseline spacing 2r" data-ja="基線間隔 2r">Baseline spacing 2r</label><span class="font-mono text-indigo-300"><span id="vD">14</span> cm</span></div>
+        <input id="d" type="range" min="2" max="30" step="0.5" value="14" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Frequency" data-ja="周波数">Frequency</label><span class="font-mono text-indigo-300"><span id="vF">1000</span> Hz</span></div>
+        <input id="f" type="range" min="200" max="4000" step="50" value="1000" class="w-full">
+      </div>
+
+      <div>
+        <label class="text-sm text-slate-300" data-en="Hippioid order (C^a × D^b)" data-ja="ヒッポイド次数 (C^a × D^b)">Hippioid order (C^a × D^b)</label>
+        <select id="order">
+          <option value="1,0" data-en="C — cardioid (order 1)" data-ja="C — カーディオイド（1次）">C — cardioid (order 1)</option>
+          <option value="1,1" selected data-en="C × D (order 2)" data-ja="C × D（2次）">C × D (order 2)</option>
+          <option value="1,3" data-en="C × D³ (order 4)" data-ja="C × D³（4次）">C × D³ (order 4)</option>
+          <option value="1,5" data-en="C × D⁵ (order 6)" data-ja="C × D⁵（6次）">C × D⁵ (order 6)</option>
+          <option value="3,5" data-en="C³ × D⁵ (order 8)" data-ja="C³ × D⁵（8次）">C³ × D⁵ (order 8)</option>
+        </select>
+      </div>
+
+      <hr class="border-slate-700">
+      <h2 class="text-lg font-semibold text-white" data-en="Scene (3D)" data-ja="シーン（3D）">Scene (3D)</h2>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Source elevation" data-ja="音源の仰角">Source elevation</label><span class="font-mono text-emerald-300"><span id="vEl">0</span>°</span></div>
+        <input id="el" type="range" min="-60" max="60" step="1" value="0" class="w-full">
+        <p class="text-[11px] text-slate-500 mt-1" data-en="Beam axis is fixed at 0° az / 0° el. Raise elevation to see off-plane loss (a planar/2-mic blind spot)." data-ja="ビーム軸は方位0°/仰角0°に固定。仰角を上げると面外の損失（平面/2マイクの盲点）が見えます。">Beam axis fixed at 0°/0°. Raise elevation to see off-plane loss.</p>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Interferer azimuth" data-ja="干渉源の方位">Interferer azimuth</label><span class="font-mono text-rose-300"><span id="vIa">60</span>°</span></div>
+        <input id="ia" type="range" min="0" max="180" step="1" value="60" class="w-full">
+      </div>
+
+      <hr class="border-slate-700">
+      <h2 class="text-lg font-semibold text-white" data-en="⚠ Real-world penalties" data-ja="⚠ 現実世界のペナルティ">⚠ Real-world penalties</h2>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Mic gain mismatch σ (ATF)" data-ja="マイクゲイン不整合 σ（ATF）">Mic gain mismatch σ (ATF)</label><span class="font-mono text-amber-300"><span id="vMg">0.5</span> dB</span></div>
+        <input id="mg" type="range" min="0" max="3" step="0.1" value="0.5" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Mic phase mismatch σ (ATF)" data-ja="マイク位相不整合 σ（ATF）">Mic phase mismatch σ (ATF)</label><span class="font-mono text-amber-300"><span id="vMp">3</span>°</span></div>
+        <input id="mp" type="range" min="0" max="20" step="0.5" value="3" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Mic position error σ" data-ja="マイク位置誤差 σ">Mic position error σ</label><span class="font-mono text-amber-300"><span id="vPos">0.5</span> mm</span></div>
+        <input id="pos" type="range" min="0" max="3" step="0.1" value="0.5" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Diffuse noise floor" data-ja="拡散雑音フロア">Diffuse noise floor</label><span class="font-mono text-sky-300"><span id="vNz">-50</span> dB</span></div>
+        <input id="nz" type="range" min="-70" max="-10" step="1" value="-50" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm"><label class="text-slate-300" data-en="Reverb / reflections (RT60-ish)" data-ja="残響 / 反射（RT60相当）">Reverb / reflections (RT60-ish)</label><span class="font-mono text-sky-300"><span id="vRv">0.3</span></span></div>
+        <input id="rv" type="range" min="0" max="1" step="0.02" value="0.3" class="w-full">
+        <p class="text-[11px] text-slate-500 mt-1" data-en="Reflections arrive from many directions and leak through (mismatch-widened) sidelobes — filling nulls." data-ja="反射は多方向から到来し、（不整合で広がった）サイドローブを通って漏れ込み、ヌルを埋めます。">Reflections leak through sidelobes — filling nulls.</p>
+      </div>
+      <label class="flex items-center gap-2 text-sm pt-1"><input id="showEnv" type="checkbox" checked class="accent-indigo-500"> <span data-en="Show mismatch envelope (Monte-Carlo)" data-ja="不整合エンベロープを表示（モンテカルロ）">Show mismatch envelope (Monte-Carlo)</span></label>
+      <label class="flex items-center gap-2 text-sm"><input id="showMvdr" type="checkbox" checked class="accent-emerald-500"> <span data-en="Show MVDR reference (all mics)" data-ja="MVDR 参照を表示（全マイク）">Show MVDR reference (all mics)</span></label>
+    </section>
+
+    <!-- ============ VISUALS ============ -->
+    <section class="lg:col-span-2 space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="card rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-white mb-2"><span data-en="Beam pattern (azimuth cut at source elevation)" data-ja="ビームパターン（音源仰角での方位カット）">Beam pattern</span> <span class="text-slate-500">dB</span></h2>
+          <div class="relative w-full" style="aspect-ratio:1/1;"><canvas id="polar" class="w-full h-full"></canvas></div>
+          <div class="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            <span><span style="color:#818cf8">▬</span> <span data-en="multiplicative (ideal, free-field)" data-ja="乗算型（理想・自由空間）">multiplicative (ideal)</span></span>
+            <span><span style="color:#f59e0b">▬</span> <span data-en="multiplicative (with penalties)" data-ja="乗算型（ペナルティ込み）">with penalties</span></span>
+            <span><span style="color:#34d399">▬</span> MVDR</span>
+          </div>
+        </div>
+        <div class="card rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-white mb-2" data-en="Directivity vs White-Noise-Gain across orders" data-ja="次数ごとの 指向性 vs 白色雑音利得">Directivity vs White-Noise-Gain across orders</h2>
+          <div class="relative w-full" style="height:300px;"><canvas id="bars"></canvas></div>
+          <p class="text-[11px] text-slate-500 mt-1" data-en="Higher order ↑ directivity but ↓↓ WNG (uncorrelated-noise robustness). MVDR shown as reference." data-ja="高次ほど指向性は↑だが WNG（無相関雑音への頑健性）は↓↓。MVDR を参照として表示。">Higher order ↑ directivity but ↓↓ WNG. MVDR shown as reference.</p>
+        </div>
+      </div>
+
+      <!-- metrics -->
+      <div class="card rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-white mb-3" data-en="Honest metrics (current settings)" data-ja="正直な指標（現在の設定）">Honest metrics (current settings)</h2>
+        <div class="overflow-x-auto"><table class="w-full text-sm">
+          <thead><tr class="text-slate-400 text-left border-b border-slate-700">
+            <th class="py-1 pr-4" data-en="Metric" data-ja="指標">Metric</th>
+            <th class="py-1 pr-4 text-indigo-300" data-en="Multiplicative" data-ja="乗算型">Multiplicative</th>
+            <th class="py-1 pr-4 text-emerald-300">MVDR</th>
+            <th class="py-1" data-en="What it means" data-ja="意味">What it means</th>
+          </tr></thead>
+          <tbody id="mbody" class="font-mono"></tbody>
+        </table></div>
+        <div id="insight" class="mt-3 text-sm rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-200"></div>
+      </div>
+
+      <!-- concerns addressed -->
+      <div class="card rounded-xl p-5 text-sm leading-relaxed">
+        <h2 class="text-base font-semibold text-white mb-2" data-en="What this tool deliberately surfaces" data-ja="このツールが意図的に可視化すること">What this tool deliberately surfaces</h2>
+        <ul class="space-y-2 text-slate-300 list-disc list-inside">
+          <li data-en="① ATF / mic mismatch sensitivity — gain/phase/position errors fill the nulls; the higher the order, the worse, because errors multiply. Watch the orange &quot;with penalties&quot; curve and the mismatch envelope diverge from the ideal as you raise the order or the σ sliders."
+              data-ja="① ATF/マイク不整合への感度 — ゲイン/位相/位置の誤差がヌルを埋める。次数が高いほど誤差が乗算され悪化。次数や σ を上げると、橙の「ペナルティ込み」曲線と不整合エンベロープが理想からどれだけ離れるか見てください。">① ATF / mic mismatch sensitivity — errors fill nulls; worse at higher order.</li>
+          <li data-en="② White-noise gain (WNG) collapses with order — the bar chart shows directivity rising but WNG falling fast. For far field you must trade WNG against directivity; high-order hippioids are very noise-sensitive."
+              data-ja="② 白色雑音利得（WNG）が次数とともに崩壊 — 棒グラフで指向性は上がるが WNG は急落。遠方界では WNG と指向性のトレードオフが必須。高次ヒッポイドは雑音に非常に敏感。">② WNG collapses with order — trade WNG against directivity.</li>
+          <li data-en="③ MVDR (statistics-based) is the reference — compare DI, WNG and interferer rejection. Differential/multiplicative rarely beats MVDR in practice, and is hard to get right off a linear/planar array or with complex acoustics."
+              data-ja="③ MVDR（統計ベース）が基準 — DI・WNG・干渉抑圧を比較。差動/乗算型は実用で MVDR に勝ることは稀で、線形/平面以外のアレイや複雑な音響では正しく作るのが難しい。">③ MVDR is the reference — differential rarely beats it in practice.</li>
+          <li data-en="④ Noise, reverb & reflections — diffuse noise and reflections leak through sidelobes and fill nulls, so the on-paper rejection is not what you get. This is where the complexity shows up — exactly the scenario to evaluate in."
+              data-ja="④ 雑音・残響・反射 — 拡散雑音と反射がサイドローブを通って漏れ、ヌルを埋めるため、机上の抑圧は得られない。複雑さが現れるのはここ — まさに評価すべきシナリオ。">④ Noise, reverb & reflections fill nulls — on-paper rejection isn't real-world.</li>
+          <li data-en="⑤ 3D reality — a 2-mic/planar differential beam can't resolve elevation; raise the source elevation and watch on-axis gain drop while the pattern can't tell it apart from an in-plane source."
+              data-ja="⑤ 3Dの現実 — 2マイク/平面の差動ビームは仰角を分離できない。音源仰角を上げると、オンアクシス利得が低下し、面内音源と区別できないことが分かる。">⑤ 3D reality — 2-mic/planar beams can't resolve elevation.</li>
+        </ul>
+        <p class="text-[12px] text-slate-500 mt-3" data-en="Honesty note: multiplicative beams are nonlinear power/detection patterns (great for cheap DIRECTION finding, per the deck's dual-path idea) — they are not clean linear audio estimators. WNG here is a Monte-Carlo proxy; reverb is a simplified diffuse+reflection-leakage model. The qualitative trends are the point."
+           data-ja="補足（正直に）：乗算型ビームは非線形のパワー/検出パターン（資料のデュアルパス通り、安価な「方向」検出には有効）であり、クリーンな線形音声推定器ではありません。ここでの WNG はモンテカルロの近似、残響は簡略化した拡散＋反射漏れモデルです。重要なのは定性的傾向です。">Honesty note: multiplicative beams are nonlinear detection patterns, not clean linear audio estimators. Metrics are pedagogical proxies.</p>
+      </div>
+    </section>
+  </div>
+
+  <footer class="text-center text-xs text-slate-600 mt-6"
+          data-en="Reality-check companion to the A4R multiplicative-beamforming deck · c = 343 m/s · narrowband · educational"
+          data-ja="A4R 乗算型ビームフォーミング資料の現実検証用コンパニオン · c = 343 m/s · 狭帯域 · 教育用">Reality-check companion to the A4R multiplicative-beamforming deck · c = 343 m/s · narrowband · educational</footer>
+</div>
+
+<script>
+"use strict";
+const C=343, TAU=2*Math.PI, $=id=>document.getElementById(id);
+let LANG='en'; const T=(en,ja)=>LANG==='ja'?ja:en;
+
+// ---------- complex helpers ----------
+const cadd=(a,b)=>[a[0]+b[0],a[1]+b[1]], csub=(a,b)=>[a[0]-b[0],a[1]-b[1]];
+const cmul=(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]], cconj=a=>[a[0],-a[1]];
+const cabs=a=>Math.hypot(a[0],a[1]);
+const cdiv=(a,b)=>{const d=b[0]*b[0]+b[1]*b[1];return[(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];};
+function cinv(A){const n=A.length,M=[];for(let i=0;i<n;i++){M[i]=[];for(let j=0;j<n;j++)M[i][j]=[A[i][j][0],A[i][j][1]];for(let j=0;j<n;j++)M[i][n+j]=(i===j)?[1,0]:[0,0];}
+  for(let col=0;col<n;col++){let piv=col,best=cabs(M[col][col]);for(let r=col+1;r<n;r++){const v=cabs(M[r][col]);if(v>best){best=v;piv=r;}}
+    if(best<1e-12)M[piv][col]=cadd(M[piv][col],[1e-9,0]);if(piv!==col){const t=M[piv];M[piv]=M[col];M[col]=t;}
+    const dv=M[col][col];for(let j=0;j<2*n;j++)M[col][j]=cdiv(M[col][j],dv);
+    for(let r=0;r<n;r++){if(r===col)continue;const fct=M[r][col];if(fct[0]===0&&fct[1]===0)continue;for(let j=0;j<2*n;j++)M[r][j]=csub(M[r][j],cmul(fct,M[col][j]));}}
+  const inv=[];for(let i=0;i<n;i++){inv[i]=[];for(let j=0;j<n;j++)inv[i][j]=M[i][n+j];}return inv;}
+const matvec=(A,x)=>A.map(r=>r.reduce((s,aij,j)=>cadd(s,cmul(aij,x[j])),[0,0]));
+const innerH=(a,b)=>a.reduce((s,am,m)=>cadd(s,cmul(cconj(am),b[m])),[0,0]);
+let _z=0; function randn(){ _z=(_z+1); const u=Math.random()||1e-9,v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v); }
+
+// ---------- geometry ----------
+function geom(kind,d){ const h=d/2; // d = baseline (m); mics 0-1 along x = baseline
+  if(kind==='endfire') return [[+h,0,0],[-h,0,0]];
+  if(kind==='square')  return [[+h,+h,0],[-h,+h,0],[-h,-h,0],[+h,-h,0]];
+  return [[+h,0,-0.2*d],[-h,0,-0.2*d],[0,+h,0.3*d],[0,-h,0.3*d]]; // tetra (3D)
+}
+const dir=(azDeg,elDeg)=>{ const a=azDeg*Math.PI/180,e=elDeg*Math.PI/180; return [Math.cos(e)*Math.cos(a),Math.cos(e)*Math.sin(a),Math.sin(e)]; };
+
+// steering vector (complex per mic), optional per-mic errors {g,ph,dp}
+function steer(P,f,s,err){ const w=TAU*f,out=[];
+  for(let i=0;i<P.length;i++){ let x=P[i][0],y=P[i][1],z=P[i][2];
+    if(err){ x+=err.dp[i][0]; y+=err.dp[i][1]; z+=err.dp[i][2]; }
+    let ph=w*(x*s[0]+y*s[1]+z*s[2])/C, g=1;
+    if(err){ ph+=err.ph[i]; g=err.g[i]; }
+    out.push([g*Math.cos(ph), g*Math.sin(ph)]); }
+  return out; }
+
+// cardioid & dipole magnitudes from mics 0,1
+function cd(av,tau,w){ const D=csub(av[0],av[1]);
+  const e=[Math.cos(w*tau),-Math.sin(w*tau)]; const Cc=csub(av[0],cmul(av[1],e)); // e^{-jwτ}: null toward back, max on-axis
+  return {Ca:cabs(Cc),Da:cabs(D)}; }
+
+// multiplicative magnitude at direction s (un-normalized)
+function mmag(P,f,s,a,b,tau,err){ const x=cd(steer(P,f,s,err),tau,TAU*f); return Math.pow(x.Ca,a)*Math.pow(x.Da,b); }
+
+// ---------- metrics ----------
+function diMult(P,f,a,b,tau){ const norm=mmag(P,f,dir(0,0),a,b,tau)||1e-12; let sum=0,wsum=0;
+  for(let el=-80;el<=80;el+=10){ const cw=Math.cos(el*Math.PI/180);
+    for(let az=0;az<360;az+=10){ const m=mmag(P,f,dir(az,el),a,b,tau)/norm; sum+=cw*m*m; wsum+=cw; } }
+  return 10*Math.log10(1/(sum/wsum)); }
+
+function wngMult(P,f,a,b,tau){ const norm=mmag(P,f,dir(0,0),a,b,tau)||1e-12; const N=400; let acc=0;
+  for(let t=0;t<N;t++){ const av=[[randn()*Math.SQRT1_2,randn()*Math.SQRT1_2],[randn()*Math.SQRT1_2,randn()*Math.SQRT1_2]];
+    const x=cd(av,tau,TAU*f); const o=Math.pow(x.Ca,a)*Math.pow(x.Da,b); acc+=o*o; }
+  return 10*Math.log10(norm*norm/(acc/N+1e-30)); }
+
+// MVDR over all mics; R = white + diffuse + interferer
+function mvdr(P,f,sT,sI,pInt,diffW,loadLin){ const M=P.length,w=TAU*f;
+  const aT=steer(P,f,sT), aI=steer(P,f,sI);
+  const R=[]; for(let i=0;i<M;i++){ R[i]=[]; for(let j=0;j<M;j++){
+    const dist=Math.hypot(P[i][0]-P[j][0],P[i][1]-P[j][1],P[i][2]-P[j][2]);
+    const x=w*dist/C, sinc=(x<1e-6)?1:Math.sin(x)/x;
+    let re=loadLin*(i===j?1:0)+diffW*sinc; let im=0;
+    const ai=aI[i],aj=cconj(aI[j]); re+=pInt*(ai[0]*aj[0]-ai[1]*aj[1]); im+=pInt*(ai[0]*aj[1]+ai[1]*aj[0]);
+    R[i][j]=[re,im]; } }
+  const Rinv=cinv(R), u=matvec(Rinv,aT), den=innerH(aT,u);
+  const wv=u.map(v=>cdiv(v,den));
+  return {wv,aT}; }
+function mvdrResp(wv,P,f,s){ return cabs(innerH(wv,steer(P,f,s))); }
+function diMvdr(wv,P,f){ let sum=0,wsum=0; const on=mvdrResp(wv,P,f,dir(0,0))||1e-12;
+  for(let el=-80;el<=80;el+=10){ const cw=Math.cos(el*Math.PI/180);
+    for(let az=0;az<360;az+=10){ const m=mvdrResp(wv,P,f,dir(az,el))/on; sum+=cw*m*m; wsum+=cw; } }
+  return 10*Math.log10(1/(sum/wsum)); }
+const wngMvdr=wv=>10*Math.log10(1/(wv.reduce((s,w)=>s+w[0]*w[0]+w[1]*w[1],0)+1e-30));
+
+// ---------- charts ----------
+Chart.defaults.color='#94a3b8'; Chart.defaults.font.size=11;
+const bars=new Chart($('bars'),{type:'bar',
+  data:{labels:['C','C×D','C×D³','C×D⁵','C³×D⁵'],datasets:[
+    {label:'DI (dB)',data:[],backgroundColor:'#818cf8'},
+    {label:'WNG (dB)',data:[],backgroundColor:'#f59e0b'} ]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    scales:{y:{grid:{color:'#1f2937'},title:{display:true,text:'dB'}},x:{grid:{display:false}}},
+    plugins:{legend:{position:'top',labels:{boxWidth:12}}}}});
+
+// ---------- polar ----------
+const pc=$('polar'), px=pc.getContext('2d'); const FLOOR=-40;
+const frac=db=>Math.min(1,Math.max(0,(db-FLOOR)/(0-FLOOR)));
+function ray(cx,cy,R,deg,col){ const t=deg*Math.PI/180; px.strokeStyle=col; px.lineWidth=2; px.beginPath(); px.moveTo(cx,cy); px.lineTo(cx+R*Math.cos(t),cy-R*Math.sin(t)); px.stroke(); px.lineWidth=1; }
+function curve(cx,cy,R,arr,col,fill){ px.beginPath();
+  for(let a=0;a<=360;a++){ const db=arr[a%360]; const r=frac(db)*R, t=a*Math.PI/180; const x=cx+r*Math.cos(t),y=cy-r*Math.sin(t); a===0?px.moveTo(x,y):px.lineTo(x,y); }
+  if(fill){ px.closePath(); px.fillStyle=fill; px.fill(); } px.strokeStyle=col; px.lineWidth=2; px.stroke(); px.lineWidth=1; }
+function drawPolar(ideal,real,mvdrP,envLo,envHi,srcAz,intAz,showEnv,showMv){
+  const dpr=window.devicePixelRatio||1,W=pc.clientWidth,H=pc.clientHeight; pc.width=W*dpr;pc.height=H*dpr;px.setTransform(dpr,0,0,dpr,0,0);px.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,R=Math.min(W,H)/2-22;
+  px.strokeStyle='#1f2937';px.fillStyle='#475569';px.font='10px monospace';px.textAlign='left';px.textBaseline='middle';
+  for(let db=0;db>=FLOOR;db-=10){ const r=frac(db)*R; px.beginPath();px.arc(cx,cy,r,0,TAU);px.stroke(); if(db>FLOOR&&db<0)px.fillText(db+'',cx+3,cy-r); }
+  px.textAlign='center'; for(let ang=0;ang<360;ang+=30){ const t=ang*Math.PI/180; px.strokeStyle='#1f2937'; px.beginPath();px.moveTo(cx,cy);px.lineTo(cx+R*Math.cos(t),cy-R*Math.sin(t));px.stroke(); px.fillStyle='#64748b'; px.fillText(ang+'°',cx+(R+12)*Math.cos(t),cy-(R+12)*Math.sin(t)); }
+  // mismatch envelope band
+  if(showEnv && envLo){ px.beginPath();
+    for(let a=0;a<=360;a++){ const r=frac(envHi[a%360])*R,t=a*Math.PI/180; const x=cx+r*Math.cos(t),y=cy-r*Math.sin(t); a===0?px.moveTo(x,y):px.lineTo(x,y); }
+    for(let a=360;a>=0;a--){ const r=frac(envLo[a%360])*R,t=a*Math.PI/180; px.lineTo(cx+r*Math.cos(t),cy-r*Math.sin(t)); }
+    px.closePath(); px.fillStyle='rgba(245,158,11,.13)'; px.fill(); }
+  ray(cx,cy,R,srcAz,'#34d399'); ray(cx,cy,R,intAz,'#f43f5e');
+  curve(cx,cy,R,ideal,'#818cf8',null);
+  curve(cx,cy,R,real,'#f59e0b',null);
+  if(showMv) curve(cx,cy,R,mvdrP,'#34d399',null);
+  px.fillStyle='#cbd5e1';px.font='12px system-ui';px.textAlign='left';
+  px.fillText(T('beam axis 0°','ビーム軸 0°'),8,16);
+}
+
+// ---------- render ----------
+function render(){
+  const kind=$('arr').value, d=+$('d').value/100, f=+$('f').value;
+  const [a,b]=$('order').value.split(',').map(Number);
+  const el=+$('el').value, ia=+$('ia').value;
+  const sg=+$('mg').value, sp=+$('mp').value*Math.PI/180, sx=+$('pos').value/1000;
+  const nz=Math.pow(10,(+$('nz').value)/10), rv=+$('rv').value;
+  const showEnv=$('showEnv').checked, showMv=$('showMvdr').checked;
+  $('vD').textContent=(d*100).toFixed(1);$('vF').textContent=f;$('vEl').textContent=el;$('vIa').textContent=ia;
+  $('vMg').textContent=(+$('mg').value).toFixed(1);$('vMp').textContent=$('mp').value;$('vPos').textContent=(+$('pos').value).toFixed(1);
+  $('vNz').textContent=$('nz').value;$('vRv').textContent=(+$('rv').value).toFixed(2);
+
+  const P=geom(kind,d), baseline=Math.hypot(P[0][0]-P[1][0],P[0][1]-P[1][1],P[0][2]-P[1][2]), tau=baseline/C;
+  const norm=mmag(P,f,dir(0,0),a,b,tau)||1e-12;
+
+  // ideal multiplicative azimuth cut at source elevation
+  const ideal=new Array(360), reverbFloorLevel=rv;
+  let sphereMean=0,cnt=0; for(let az=0;az<360;az+=6){ sphereMean+=Math.pow(mmag(P,f,dir(az,0),a,b,tau)/norm,2); cnt++; }
+  sphereMean=Math.sqrt(sphereMean/cnt);
+  for(let az=0;az<360;az++){ const m=mmag(P,f,dir(az,el),a,b,tau)/norm; ideal[az]=20*Math.log10(Math.max(m,1e-6)); }
+
+  // mismatch Monte-Carlo envelope + mean ("with penalties")
+  const TR=showEnv?50:24; const lo=new Array(360).fill(99),hi=new Array(360).fill(-99),mean=new Array(360).fill(0);
+  for(let t=0;t<TR;t++){ const err={g:[],ph:[],dp:[]};
+    for(let i=0;i<P.length;i++){ err.g.push(Math.pow(10,(sg*randn())/20)); err.ph.push(sp*randn()); err.dp.push([sx*randn(),sx*randn(),sx*randn()]); }
+    const nrm=mmag(P,f,dir(0,0),a,b,tau,err)||1e-12;
+    for(let az=0;az<360;az++){ let m=mmag(P,f,dir(az,el),a,b,tau,err)/nrm;
+      // add diffuse-noise + reverb leakage floor (fills nulls)
+      const floor=Math.sqrt(nz + (reverbFloorLevel*sphereMean)*(reverbFloorLevel*sphereMean));
+      m=Math.sqrt(m*m+floor*floor);
+      const db=20*Math.log10(Math.max(m,1e-6)); mean[az]+=db; if(db<lo[az])lo[az]=db; if(db>hi[az])hi[az]=db; } }
+  for(let az=0;az<360;az++) mean[az]/=TR;
+
+  // MVDR reference
+  let mv=null,mvP=new Array(360).fill(FLOOR),diMv=NaN,wnMv=NaN,rejMv=NaN;
+  const sT=dir(0,el); // MVDR steered to the source (fair comparison)
+  const sI=dir(ia,0);
+  if(true){ const m=mvdr(P,f,sT,sI,1.0,Math.max(rv*1.5,0.05),nz+0.02); mv=m.wv;
+    const on=mvdrResp(mv,P,f,sT)||1e-12;
+    for(let az=0;az<360;az++){ mvP[az]=20*Math.log10(Math.max(mvdrResp(mv,P,f,dir(az,el))/on,1e-6)); }
+    diMv=diMvdr(mv,P,f); wnMv=wngMvdr(mv); rejMv=20*Math.log10(Math.max(mvdrResp(mv,P,f,sI)/on,1e-6)); }
+
+  drawPolar(ideal,mean,mvP,lo,hi,0,ia,showEnv,showMv);
+
+  // bars: DI & WNG across orders (ideal, current f)
+  const orders=[[1,0],[1,1],[1,3],[1,5],[3,5]];
+  const di=orders.map(([A,B])=>diMult(P,f,A,B,tau)), wn=orders.map(([A,B])=>wngMult(P,f,A,B,tau));
+  bars.data.datasets[0].data=di; bars.data.datasets[1].data=wn;
+  bars.data.datasets[0].label=T('DI (dB)','指向性 DI (dB)'); bars.data.datasets[1].label=T('WNG (dB)','WNG (dB)');
+  bars.update();
+
+  // metrics for current order
+  const diM=diMult(P,f,a,b,tau), wnM=wngMult(P,f,a,b,tau);
+  const rejIdeal=ideal[Math.round(ia)%360];
+  const rejReal=mean[Math.round(ia)%360];
+  const onAxisErr=mean[0]; // dB deviation from 0 (ideal on-axis = 0 dB)
+  const fmt=v=>isFinite(v)?v.toFixed(1):'—';
+  const rows=[
+    [T('Directivity Index','指向性指数'), fmt(diM)+' dB', fmt(diMv)+' dB', T('higher = more directional','高いほど指向的')],
+    [T('White-noise gain (WNG)','白色雑音利得 (WNG)'), fmt(wnM)+' dB', fmt(wnMv)+' dB', T('higher = robust to mic noise','高いほどマイク雑音に頑健')],
+    [T('Interferer rejection (ideal)','干渉抑圧（理想）'), fmt(rejIdeal)+' dB', fmt(rejMv)+' dB', T('lower = deeper null (free-field)','低いほど深いヌル（自由空間）')],
+    [T('Interferer rejection (real)','干渉抑圧（現実）'), fmt(rejReal)+' dB', '—', T('with mismatch+noise+reverb','不整合＋雑音＋残響込み')],
+    [T('On-axis error (real)','オンアクシス誤差（現実）'), fmt(onAxisErr)+' dB', '0.0 dB', T('target distortion from mismatch','不整合による目標歪み')],
+  ];
+  $('mbody').innerHTML=rows.map(r=>`<tr class="border-b border-slate-800">
+    <td class="py-1 pr-4 text-slate-400 font-sans">${r[0]}</td>
+    <td class="py-1 pr-4 text-indigo-300">${r[1]}</td>
+    <td class="py-1 pr-4 text-emerald-300">${r[2]}</td>
+    <td class="py-1 text-slate-500 font-sans text-xs">${r[3]}</td></tr>`).join('');
+
+  // insight
+  const lostRej=rejReal-rejIdeal; // positive = null filled (worse)
+  const wngGap=wnMv-wnM;
+  let msg;
+  if(a+b>=6 && wnM<-10) msg=T(
+    `Order ${a}+${b}: WNG is ${fmt(wnM)} dB (vs MVDR ${fmt(wnMv)} dB). This high order amplifies uncorrelated mic noise badly — and mismatch/reverb have filled the interferer null by ${fmt(lostRej)} dB versus free-field. This is the regime Paul warned about.`,
+    `次数 ${a}+${b}：WNG は ${fmt(wnM)} dB（MVDR は ${fmt(wnMv)} dB）。この高次は無相関なマイク雑音を強く増幅し、不整合/残響が干渉ヌルを自由空間比で ${fmt(lostRej)} dB 埋めています。これは Paul が警告した領域です。`);
+  else if(Math.abs(el)>15) msg=T(
+    `Source is ${el}° off the beam plane: on-axis response is down ${fmt(onAxisErr)} dB and the planar/2-mic beam can't separate elevation — a 3D blind spot.`,
+    `音源はビーム面から ${el}° 外れています：オンアクシス応答は ${fmt(onAxisErr)} dB 低下し、平面/2マイクのビームは仰角を分離できません — 3Dの盲点です。`);
+  else msg=T(
+    `Ideal null on the interferer is ${fmt(rejIdeal)} dB, but with mismatch+noise+reverb you actually get ${fmt(rejReal)} dB. MVDR reaches DI ${fmt(diMv)} / WNG ${fmt(wnMv)} dB on the same array — raise the order or σ sliders to widen the gap.`,
+    `干渉源への理想ヌルは ${fmt(rejIdeal)} dB ですが、不整合＋雑音＋残響では実際には ${fmt(rejReal)} dB。同じアレイで MVDR は DI ${fmt(diMv)} / WNG ${fmt(wnMv)} dB。次数や σ を上げると差が広がります。`);
+  $('insight').textContent=msg;
+}
+
+// ---------- language ----------
+function applyLang(){ document.querySelectorAll('[data-en]').forEach(e=>{ e.textContent = LANG==='ja'?(e.dataset.ja||e.dataset.en):e.dataset.en; }); }
+const enBtn=$('enBtn'),jaBtn=$('jaBtn');
+function setLang(l){ LANG=l; document.body.classList.toggle('lang-en',l==='en'); document.body.classList.toggle('lang-ja',l==='ja'); document.documentElement.lang=l;
+  [[enBtn,l==='en'],[jaBtn,l==='ja']].forEach(([b,act])=>{ b.classList.toggle('bg-indigo-600',act); b.classList.toggle('text-white',act); b.classList.toggle('bg-slate-800',!act); b.classList.toggle('text-slate-300',!act); });
+  try{ localStorage.setItem('mbf-lang',l); }catch(e){} applyLang(); render(); }
+enBtn.addEventListener('click',()=>setLang('en')); jaBtn.addEventListener('click',()=>setLang('ja'));
+
+// ---------- wiring ----------
+['arr','d','f','order','el','ia','mg','mp','pos','nz','rv','showEnv','showMvdr'].forEach(id=>$(id).addEventListener('input',render));
+window.addEventListener('resize',render);
+let initialLang='en'; try{ const s=localStorage.getItem('mbf-lang'); initialLang=s||((navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en'); }catch(e){}
+setLang(initialLang);
+</script>
+</body>
+</html>

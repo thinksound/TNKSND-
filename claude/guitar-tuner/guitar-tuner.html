@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acoustic Guitar Tuner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{ background:#0b1020; font-family:ui-sans-serif,system-ui,sans-serif; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  .mono{ font-family:ui-monospace,monospace; }
+  body.lang-en [lang=ja]{ display:none; }
+  body.lang-ja [lang=en]{ display:none; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen">
+<div class="max-w-5xl mx-auto px-4 py-6">
+
+  <div class="flex justify-end items-center gap-2 mb-2">
+    <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs">
+      <button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button>
+      <button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button>
+    </div>
+    <a href="instructions.html" class="px-3 py-1.5 text-sm rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+       data-en="📖 Instructions" data-ja="📖 説明">📖 Instructions</a>
+  </div>
+
+  <header class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-white">🎸 <span data-en="Acoustic Guitar Tuner" data-ja="アコースティックギター・チューナー">Acoustic Guitar Tuner</span></h1>
+    <p class="text-slate-400 text-sm mt-1" data-en="Standard tuning · E2 A2 D3 G3 B3 E4 · pluck one string at a time" data-ja="標準チューニング · E2 A2 D3 G3 B3 E4 · 一度に1弦ずつ弾く">Standard tuning · E2 A2 D3 G3 B3 E4 · pluck one string at a time</p>
+  </header>
+
+  <!-- start + status -->
+  <div class="flex flex-wrap items-center justify-center gap-3 mb-6">
+    <button id="startBtn" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">🎤 Start Tuning</button>
+    <span id="status" class="text-sm text-slate-400">Click start and allow microphone access.</span>
+  </div>
+
+  <!-- main readout -->
+  <div class="card rounded-2xl p-6 mb-5">
+    <div class="grid md:grid-cols-3 gap-6 items-center">
+      <!-- note -->
+      <div class="text-center">
+        <div id="noteName" class="text-7xl font-bold text-white leading-none">—</div>
+        <div id="noteLabel" class="text-slate-400 text-sm mt-2">play a string…</div>
+        <div id="freqRead" class="mono text-slate-500 text-sm mt-1">0.0 Hz</div>
+      </div>
+      <!-- meter -->
+      <div class="md:col-span-2">
+        <canvas id="meter" class="w-full" style="height:130px"></canvas>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-xs text-slate-500" data-en="♭ flat (tune up)" data-ja="♭ 低い（上げる）">♭ flat (tune up)</span>
+          <div id="verdict" class="text-lg font-semibold text-slate-400">—</div>
+          <span class="text-xs text-slate-500" data-en="sharp (tune down) ♯" data-ja="高い（下げる）♯">sharp (tune down) ♯</span>
+        </div>
+        <div id="centsRead" class="text-center mono text-sm text-slate-400 mt-1">0 cents</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- string selector -->
+  <div class="card rounded-2xl p-4 mb-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-white" data-en="Strings" data-ja="弦">Strings</h2>
+      <button id="autoBtn" class="text-xs px-3 py-1 rounded-full bg-emerald-600 text-white">Auto-detect: ON</button>
+    </div>
+    <div id="strings" class="grid grid-cols-3 sm:grid-cols-6 gap-2"></div>
+    <p class="text-[11px] text-slate-500 mt-2" data-en="In auto mode the tuner picks the closest string. Tap a string to lock onto it." data-ja="自動モードでは最も近い弦を自動選択します。弦をタップするとその弦に固定します。">In auto mode the tuner picks the closest string. Tap a string to lock onto it.</p>
+  </div>
+
+  <!-- scopes -->
+  <div class="grid md:grid-cols-2 gap-5">
+    <div class="card rounded-2xl p-4">
+      <h2 class="text-sm font-semibold text-white mb-2" data-en="Time Waveform" data-ja="時間波形">Time Waveform</h2>
+      <div class="bg-black/40 rounded-lg p-2"><canvas id="wave" class="w-full" style="height:200px"></canvas></div>
+    </div>
+    <div class="card rounded-2xl p-4">
+      <h2 class="text-sm font-semibold text-white mb-2"><span data-en="Frequency Spectrum" data-ja="周波数スペクトル">Frequency Spectrum</span> <span class="text-slate-500">(0–1200 Hz)</span></h2>
+      <div class="bg-black/40 rounded-lg p-2"><canvas id="spec" class="w-full" style="height:200px"></canvas></div>
+    </div>
+  </div>
+
+  <footer class="text-center text-xs text-slate-600 mt-6"
+          data-en="Autocorrelation pitch detection · in-tune window = ±5 cents · audio stays on your device"
+          data-ja="自己相関によるピッチ検出 · 合致範囲 = ±5 セント · 音声は端末内で処理">Autocorrelation pitch detection · in-tune window = ±5 cents · audio stays on your device</footer>
+</div>
+
+<script>
+// ---------- guitar strings (standard tuning) ----------
+const STRINGS=[
+  {name:'E2',freq:82.41,  label:'6th · Low E',  labelJa:'6弦 · 低音E'},
+  {name:'A2',freq:110.00, label:'5th · A',      labelJa:'5弦 · A'},
+  {name:'D3',freq:146.83, label:'4th · D',      labelJa:'4弦 · D'},
+  {name:'G3',freq:196.00, label:'3rd · G',      labelJa:'3弦 · G'},
+  {name:'B3',freq:246.94, label:'2nd · B',      labelJa:'2弦 · B'},
+  {name:'E4',freq:329.63, label:'1st · High E', labelJa:'1弦 · 高音E'},
+];
+const IN_TUNE=5;            // cents tolerance
+const $=id=>document.getElementById(id);
+
+// ---------- language (EN / JA) ----------
+let LANG='en';
+const T=(en,ja)=>LANG==='ja'?ja:en;
+
+// ---------- audio ----------
+let actx=null, analyser=null, stream=null, running=false;
+let timeBuf=null, freqBuf=null;
+let lockTarget=null;        // null = auto
+let recent=[];              // recent freq samples for smoothing
+let lastChime=-10, wasInTune=false;
+
+function ctx(){ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+
+// ---------- build string chips ----------
+const sWrap=$('strings');
+STRINGS.forEach((s,i)=>{ const b=document.createElement('button');
+  b.id='str'+i; b.className='py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-center';
+  b.innerHTML=`<div class="text-lg font-bold">${s.name}</div><div class="text-[10px] text-slate-400" data-en="${s.label}" data-ja="${s.labelJa}">${s.label}</div>`;
+  b.onclick=()=>{ lockTarget = (lockTarget===i? null : i); updateAuto(); };
+  sWrap.appendChild(b); });
+function updateAuto(){ $('autoBtn').textContent=T('Auto-detect','自動検出')+': '+(lockTarget===null?T('ON','オン'):T('OFF','オフ'));
+  $('autoBtn').className='text-xs px-3 py-1 rounded-full '+(lockTarget===null?'bg-emerald-600 text-white':'bg-slate-700 text-slate-300'); }
+$('autoBtn').onclick=()=>{ lockTarget=null; updateAuto(); };
+
+// ---------- start / stop ----------
+$('startBtn').onclick=async ()=>{
+  if(running){ stop(); return; }
+  try{
+    const a=ctx(); if(a.state==='suspended') await a.resume();
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const src=a.createMediaStreamSource(stream);
+    analyser=a.createAnalyser(); analyser.fftSize=2048; analyser.smoothingTimeConstant=0.8;
+    src.connect(analyser);
+    timeBuf=new Float32Array(analyser.fftSize);
+    freqBuf=new Uint8Array(analyser.frequencyBinCount);
+    running=true; $('startBtn').textContent=T('⏹ Stop','⏹ 停止'); $('startBtn').className='px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold transition';
+    $('status').textContent=T('Listening… pluck a string.','受信中… 弦を弾いてください。');
+    draw(); detectLoop();
+  }catch(e){ $('status').textContent=T('⚠️ Microphone blocked. Allow access and try again.','⚠️ マイクがブロックされています。許可して再試行してください。'); }
+};
+function stop(){ running=false; if(stream) stream.getTracks().forEach(t=>t.stop());
+  $('startBtn').textContent=T('🎤 Start Tuning','🎤 チューニング開始'); $('startBtn').className='px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition';
+  $('status').textContent=T('Stopped.','停止しました。'); resetReadout(); }
+
+// ---------- autocorrelation pitch detection ----------
+function autoCorrelate(buf, sr){
+  let SIZE=buf.length, rms=0;
+  for(let i=0;i<SIZE;i++){ rms+=buf[i]*buf[i]; }
+  rms=Math.sqrt(rms/SIZE);
+  if(rms<0.01) return -1;                       // too quiet
+  // trim silent edges
+  let r1=0,r2=SIZE-1,thr=0.2;
+  for(let i=0;i<SIZE/2;i++){ if(Math.abs(buf[i])<thr){ r1=i; break; } }
+  for(let i=1;i<SIZE/2;i++){ if(Math.abs(buf[SIZE-i])<thr){ r2=SIZE-i; break; } }
+  const b=buf.slice(r1,r2); SIZE=b.length;
+  if(SIZE<128) return -1;
+  const c=new Float32Array(SIZE);
+  for(let i=0;i<SIZE;i++){ let s=0; for(let j=0;j<SIZE-i;j++) s+=b[j]*b[j+i]; c[i]=s; }
+  let d=0; while(d<SIZE-1 && c[d]>c[d+1]) d++;   // skip down to first dip
+  let max=-1,pos=-1;
+  for(let i=d;i<SIZE;i++){ if(c[i]>max){ max=c[i]; pos=i; } }
+  if(pos<=0) return -1;
+  let T0=pos;
+  if(pos>0 && pos<SIZE-1){ const x1=c[pos-1],x2=c[pos],x3=c[pos+1];
+    const a2=(x1+x3-2*x2)/2, b2=(x3-x1)/2; if(a2) T0=pos-b2/(2*a2); }
+  const f=sr/T0;
+  return (f>60 && f<1000)? f : -1;
+}
+
+// ---------- detection loop (throttled) ----------
+function detectLoop(){
+  if(!running) return;
+  analyser.getFloatTimeDomainData(timeBuf);
+  const f=autoCorrelate(timeBuf, ctx().sampleRate);
+  if(f>0){ recent.push(f); if(recent.length>6) recent.shift();
+    const med=[...recent].sort((a,b)=>a-b)[Math.floor(recent.length/2)];
+    handlePitch(med);
+  } else {
+    recent=[]; if(performance.now()) ; // keep last shown briefly
+  }
+  setTimeout(detectLoop, 70);
+}
+
+function nearestString(f){
+  let best=0,bestC=1e9;
+  STRINGS.forEach((s,i)=>{ const c=Math.abs(1200*Math.log2(f/s.freq)); if(c<bestC){bestC=c;best=i;} });
+  return best;
+}
+
+let curCents=0, curTargetIdx=-1, haveSignal=false, lastFreq=-1;
+function handlePitch(f){
+  haveSignal=true; lastFreq=f;
+  const idx = lockTarget!==null ? lockTarget : nearestString(f);
+  const target=STRINGS[idx];
+  const cents=1200*Math.log2(f/target.freq);
+  curCents=cents; curTargetIdx=idx;
+
+  $('noteName').textContent=target.name;
+  $('noteLabel').textContent=T(target.label,target.labelJa);
+  $('freqRead').textContent=f.toFixed(1)+' Hz  ('+T('target','目標')+' '+target.freq.toFixed(2)+')';
+
+  const inTune=Math.abs(cents)<=IN_TUNE;
+  const cc=Math.round(cents);
+  $('centsRead').textContent=(cc>0?'+':'')+cc+T(' cents',' セント')+(inTune?'':(cents<0?T('  ▲ tune up','  ▲ 上げる'):T('  ▼ tune down','  ▼ 下げる')));
+
+  if(inTune){ $('verdict').textContent=T('✓ IN TUNE','✓ 合っています'); $('verdict').className='text-lg font-semibold text-emerald-400';
+    $('noteName').className='text-7xl font-bold text-emerald-400 leading-none';
+  } else if(cents<0){ $('verdict').textContent=T('TOO LOW · tune UP','低すぎ · 上げる'); $('verdict').className='text-lg font-semibold text-amber-400';
+    $('noteName').className='text-7xl font-bold text-amber-300 leading-none';
+  } else { $('verdict').textContent=T('TOO HIGH · tune DOWN','高すぎ · 下げる'); $('verdict').className='text-lg font-semibold text-amber-400';
+    $('noteName').className='text-7xl font-bold text-amber-300 leading-none'; }
+
+  // highlight string chips
+  STRINGS.forEach((s,i)=>{ const el=$('str'+i);
+    el.className='py-2 rounded-lg transition text-center '+(
+      i===idx ? (inTune?'bg-emerald-600 text-white':'bg-amber-600/80 text-white')
+              : 'bg-slate-800 hover:bg-slate-700'); });
+
+  // chime on rising edge into tune (with cooldown)
+  const now=ctx().currentTime;
+  if(inTune && !wasInTune && now-lastChime>1.5){ chime(); lastChime=now; }
+  wasInTune=inTune;
+}
+
+function resetReadout(){ $('noteName').textContent='—'; $('noteName').className='text-7xl font-bold text-white leading-none';
+  $('noteLabel').textContent=T('play a string…','弦を弾いてください…'); $('freqRead').textContent='0.0 Hz';
+  $('verdict').textContent='—'; $('verdict').className='text-lg font-semibold text-slate-400';
+  $('centsRead').textContent=T('0 cents','0 セント'); curCents=0; curTargetIdx=-1; haveSignal=false; lastFreq=-1; wasInTune=false;
+  STRINGS.forEach((s,i)=>$('str'+i).className='py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-center'); }
+
+// ---------- in-tune chime ----------
+function chime(){ const a=ctx(); const now=a.currentTime;
+  [659.25, 987.77].forEach((fr,i)=>{ const o=a.createOscillator(), g=a.createGain();
+    o.type='sine'; o.frequency.value=fr; o.connect(g); g.connect(a.destination);
+    const t=now+i*0.10; g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.25,t+0.02); g.gain.exponentialRampToValueAtTime(0.0008,t+0.45);
+    o.start(t); o.stop(t+0.5); });
+}
+
+// ---------- drawing ----------
+function fit(cv){ const dpr=window.devicePixelRatio||1, W=cv.clientWidth,H=cv.clientHeight;
+  cv.width=W*dpr; cv.height=H*dpr; const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,W,H}; }
+
+function drawMeter(){
+  const {c,W,H}=fit($('meter')); c.clearRect(0,0,W,H);
+  const cx=W/2, midY=H*0.62, half=W*0.44;
+  const inTune=haveSignal && Math.abs(curCents)<=IN_TUNE;
+  // scale ticks -50..50
+  c.strokeStyle='#334155'; c.fillStyle='#64748b'; c.font='10px monospace'; c.textAlign='center';
+  for(let v=-50;v<=50;v+=10){ const x=cx+(v/50)*half; c.beginPath(); c.moveTo(x,midY-12); c.lineTo(x,midY+12); c.lineWidth=v===0?2:1; c.strokeStyle=v===0?'#10b981':'#334155'; c.stroke();
+    c.fillText(v===0?'0':((v>0?'+':'')+v), x, midY+26); }
+  // green in-tune zone
+  c.fillStyle='rgba(16,185,129,.18)'; const gz=(IN_TUNE/50)*half; c.fillRect(cx-gz,midY-12,2*gz,24);
+  // needle
+  if(haveSignal){ const cl=Math.max(-50,Math.min(50,curCents)); const x=cx+(cl/50)*half;
+    c.strokeStyle=inTune?'#10b981':'#f59e0b'; c.lineWidth=4; c.beginPath(); c.moveTo(x,midY-30); c.lineTo(x,midY+14); c.stroke();
+    c.fillStyle=inTune?'#10b981':'#f59e0b'; c.beginPath(); c.arc(x,midY-32,6,0,7); c.fill(); }
+  // label
+  c.fillStyle=inTune?'#10b981':'#94a3b8'; c.font='bold 13px sans-serif'; c.textAlign='center';
+  c.fillText(haveSignal?(inTune?T('PERFECT','完璧'):T('CENTS OFF: ','ずれ(¢): ')+(curCents>0?'+':'')+Math.round(curCents)):'—', cx, 16);
+}
+
+function drawWave(){
+  const {c,W,H}=fit($('wave')); c.clearRect(0,0,W,H);
+  c.strokeStyle='rgba(255,255,255,.06)'; c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+  if(!running||!analyser) return;
+  analyser.getFloatTimeDomainData(timeBuf);
+  c.strokeStyle='#34d399'; c.lineWidth=2; c.beginPath();
+  for(let i=0;i<timeBuf.length;i++){ const x=i/timeBuf.length*W; const y=H/2 - timeBuf[i]*H*0.45; i===0?c.moveTo(x,y):c.lineTo(x,y); }
+  c.stroke();
+}
+
+function drawSpec(){
+  const {c,W,H}=fit($('spec')); c.clearRect(0,0,W,H);
+  if(!running||!analyser) return;
+  analyser.getByteFrequencyData(freqBuf);
+  const nyq=ctx().sampleRate/2, maxHz=1200, bins=freqBuf.length, show=Math.floor(bins*maxHz/nyq);
+  for(let i=0;i<show;i++){ const x=i/show*W, bw=W/show+1, h=freqBuf[i]/255*H;
+    const hue=160+(i/show)*120; c.fillStyle=`hsl(${hue},80%,${28+freqBuf[i]/255*32}%)`; c.fillRect(x,H-h,bw,h); }
+  // mark target frequency
+  if(haveSignal && curTargetIdx>=0){ const tx=STRINGS[curTargetIdx].freq/maxHz*W;
+    c.strokeStyle='#f59e0b'; c.setLineDash([4,3]); c.beginPath(); c.moveTo(tx,0); c.lineTo(tx,H); c.stroke(); c.setLineDash([]);
+    c.fillStyle='#f59e0b'; c.font='10px monospace'; c.textAlign='left'; c.fillText(STRINGS[curTargetIdx].name, tx+3, 11); }
+  c.fillStyle='#475569'; c.font='10px monospace'; c.textAlign='center';
+  for(let hz=200;hz<=1200;hz+=200){ const x=hz/maxHz*W; c.fillText(hz+'', x, H-2); }
+}
+
+function draw(){ if(!running) return; drawMeter(); drawWave(); drawSpec(); requestAnimationFrame(draw); }
+
+// ---------- language switching ----------
+function applyLang(){ document.querySelectorAll('[data-en]').forEach(e=>{ e.textContent = LANG==='ja'?(e.dataset.ja||e.dataset.en):e.dataset.en; }); }
+function relabel(){
+  applyLang();
+  updateAuto();
+  $('startBtn').textContent = running ? T('⏹ Stop','⏹ 停止') : T('🎤 Start Tuning','🎤 チューニング開始');
+  if(running && haveSignal && lastFreq>0){ handlePitch(lastFreq); }
+  else if(running){ $('status').textContent=T('Listening… pluck a string.','受信中… 弦を弾いてください。'); }
+  else { resetReadout(); $('status').textContent=T('Click start and allow microphone access.','開始を押してマイクへのアクセスを許可してください。'); }
+}
+const enBtn=$('enBtn'), jaBtn=$('jaBtn');
+function setLang(l){
+  LANG=l;
+  document.body.classList.toggle('lang-en',l==='en');
+  document.body.classList.toggle('lang-ja',l==='ja');
+  document.documentElement.lang=l;
+  [[enBtn,l==='en'],[jaBtn,l==='ja']].forEach(([b,act])=>{
+    b.classList.toggle('bg-indigo-600',act); b.classList.toggle('text-white',act);
+    b.classList.toggle('bg-slate-800',!act); b.classList.toggle('text-slate-300',!act);
+  });
+  try{ localStorage.setItem('gt-lang',l); }catch(e){}
+  relabel();
+}
+enBtn.addEventListener('click',()=>setLang('en'));
+jaBtn.addEventListener('click',()=>setLang('ja'));
+let initialLang='en';
+try{ const s=localStorage.getItem('gt-lang'); initialLang = s || ((navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en'); }catch(e){}
+setLang(initialLang);
+
+window.addEventListener('resize',()=>{ if(running){ drawMeter(); drawWave(); drawSpec(); } });
+</script>
+</body>
+</html>

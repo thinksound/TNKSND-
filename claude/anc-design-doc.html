@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Doc — Active Noise Cancellation (ANC) Web App</title>
+<style>
+  :root{ --ink:#0f172a; --muted:#64748b; --acc:#0d9488; --acc2:#7c3aed; --line:#e5e9f0; }
+  *{box-sizing:border-box}
+  body{ font-family:'Segoe UI',system-ui,Arial,sans-serif; color:var(--ink); line-height:1.6; max-width:920px; margin:0 auto; padding:0 22px 80px; }
+  h1{ font-size:30px; margin:0 0 4px; }
+  h2{ font-size:21px; margin:38px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--line); color:#1e293b; }
+  h3{ font-size:16px; margin:22px 0 6px; color:#334155; }
+  p,li{ font-size:15px; }
+  code{ background:#f1f5f9; padding:1px 6px; border-radius:4px; font-family:ui-monospace,monospace; font-size:13.5px; }
+  .hero{ background:linear-gradient(120deg,#134e4a,#5b21b6); color:#fff; border-radius:14px; padding:30px 28px; margin:24px 0; }
+  .hero h1{ color:#fff; } .hero p{ color:#d1fae5; margin:6px 0 0; }
+  .tag{ display:inline-block; background:rgba(255,255,255,.18); padding:3px 10px; border-radius:999px; font-size:12px; letter-spacing:.5px; }
+  .callout{ background:#f0fdfa; border-left:4px solid var(--acc); padding:12px 16px; border-radius:8px; margin:16px 0; }
+  .warn{ background:#fff7ed; border-left:4px solid #ea580c; padding:12px 16px; border-radius:8px; margin:16px 0; }
+  .ok{ background:#ecfdf5; border-left:4px solid #059669; padding:12px 16px; border-radius:8px; margin:16px 0; }
+  table{ border-collapse:collapse; width:100%; margin:14px 0; font-size:14px; }
+  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th{ background:#f8fafc; }
+  .toc{ background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:14px 20px; font-size:14px; }
+  .toc a{ color:var(--acc); text-decoration:none; }
+  .diagram{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; margin:16px 0; overflow-x:auto; }
+  .q{ background:#fefce8; border:1px solid #fde047; border-radius:10px; padding:14px 18px; margin:12px 0; }
+  .q b{ color:#854d0e; }
+  .eq{ display:block; background:#0f172a; color:#e2e8f0; padding:10px 14px; border-radius:8px; font-family:ui-monospace,monospace; font-size:13.5px; overflow-x:auto; margin:10px 0; }
+  footer{ margin-top:50px; color:var(--muted); font-size:13px; border-top:1px solid var(--line); padding-top:14px; }
+  .pill{ font-size:11px; padding:2px 8px; border-radius:999px; background:#ccfbf1; color:#115e59; }
+  body.lang-en [lang=ja]{display:none!important}
+  body.lang-ja [lang=en]{display:none!important}
+</style>
+</head>
+<body class="lang-en">
+<div style="display:flex;justify-content:flex-end;gap:6px;padding:8px 12px;font-family:system-ui,sans-serif;">
+  <button id="enBtn" onclick="setLang('en')" style="cursor:pointer;border:1px solid #8888;border-radius:6px;padding:4px 10px;font-size:12px;background:transparent;color:inherit;">EN</button>
+  <button id="jaBtn" onclick="setLang('ja')" style="cursor:pointer;border:1px solid #8888;border-radius:6px;padding:4px 10px;font-size:12px;background:transparent;color:inherit;">日本語</button>
+</div>
+
+<div lang="en">
+
+<div class="hero">
+  <span class="tag">DESIGN DOC · FOR REVIEW</span>
+  <h1>Active Noise Cancellation (ANC)</h1>
+  <p>An interactive web app that senses ambient noise with a mic and emits "anti-noise" through a speaker to destructively cancel it — using the FxLMS adaptive algorithm.</p>
+</div>
+
+<div class="callout">
+<b>Purpose of this document:</b> explain how ANC works and how we propose to build the app, for your review before coding. Decision points are flagged in yellow boxes and summarized at the end.
+</div>
+
+<div class="warn">
+<b>⚠ Read this first — the honesty section.</b> Real acoustic ANC has a hard <b>causality/latency requirement</b>: the anti-noise must reach the cancellation point <i>at the same instant</i> as the noise, phase-inverted. That demands microsecond-to-low-millisecond loop latency. <b>A web browser's audio path is ~20–100 ms</b> — far too slow to cancel live broadband sound acoustically. So our app's <b>real-time-cancellation core will be a physics-accurate SIMULATION</b> (where we control the timing exactly and can prove cancellation), plus an honest, limited real-audio demo. This is the single most important thing to align on — see Decision 1.
+</div>
+
+<div class="toc">
+<b>Contents</b><br>
+<a href="#problem">1. The idea</a> ·
+<a href="#types">2. Architectures</a> ·
+<a href="#fxlms">3. The FxLMS algorithm</a> ·
+<a href="#latency">4. The latency reality</a> ·
+<a href="#arch">5. App architecture</a> ·
+<a href="#metrics">6. Metrics &amp; visuals</a> ·
+<a href="#ui">7. UI layout</a> ·
+<a href="#plan">8. Build phases</a> ·
+<a href="#aec">9. AEC vs ANC</a> ·
+<a href="#questions">10. Open questions</a>
+</div>
+
+<h2 id="problem">1. The core idea</h2>
+<p>Two sound waves of equal amplitude and opposite phase sum to silence (destructive interference). ANC measures incoming noise, computes its mirror image ("anti-noise"), and plays it so the two cancel at a target point (e.g., your ear).</p>
+<span class="eq">noise(t) + anti-noise(t) ≈ 0    when    anti-noise(t) = −noise(t)</span>
+<p>The challenge is that the system doesn't know the noise in advance and the speaker→target path colors and delays the anti-noise — so we need an adaptive filter that learns to pre-compensate. That's <b>FxLMS</b>.</p>
+
+<h2 id="types">2. ANC architectures</h2>
+<div class="diagram">
+<svg viewBox="0 0 860 230" width="100%" role="img" aria-label="Feedforward ANC diagram">
+  <style> .b{fill:#f0fdfa;stroke:#0d9488;stroke-width:1.5} .t{font:13px sans-serif;fill:#1e293b} .s{font:11px sans-serif;fill:#64748b} .a{stroke:#334155;stroke-width:1.6;fill:none;marker-end:url(#ar3)} .ar{fill:#334155}</style>
+  <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="ar"/></marker></defs>
+  <rect x="20" y="95" width="110" height="40" rx="8" class="b" style="fill:#fef2f2;stroke:#dc2626"/><text x="75" y="120" text-anchor="middle" class="t">Noise source</text>
+  <rect x="190" y="40" width="120" height="40" rx="8" class="b"/><text x="250" y="65" text-anchor="middle" class="t">🎤 Reference mic</text>
+  <rect x="190" y="150" width="120" height="40" rx="8" class="b"/><text x="250" y="175" text-anchor="middle" class="t">Primary path P(z)</text>
+  <rect x="390" y="40" width="140" height="40" rx="8" class="b" style="fill:#ede9fe;stroke:#7c3aed"/><text x="460" y="60" text-anchor="middle" class="t">ANC filter W(z)</text><text x="460" y="74" text-anchor="middle" class="s">FxLMS</text>
+  <rect x="600" y="40" width="110" height="40" rx="8" class="b"/><text x="655" y="65" text-anchor="middle" class="t">🔊 Anti-noise</text>
+  <rect x="600" y="150" width="110" height="40" rx="8" class="b"/><text x="655" y="175" text-anchor="middle" class="t">Secondary S(z)</text>
+  <circle cx="780" cy="135" r="20" class="b"/><text x="780" y="140" text-anchor="middle" class="t">Σ</text>
+  <rect x="600" y="105" width="0" height="0"/>
+  <text x="800" y="115" class="s">error mic e(n)</text>
+  <line x1="130" y1="112" x2="190" y2="60" class="a"/>
+  <line x1="130" y1="118" x2="190" y2="168" class="a"/>
+  <line x1="310" y1="60" x2="390" y2="60" class="a"/>
+  <line x1="530" y1="60" x2="600" y2="60" class="a"/>
+  <line x1="710" y1="62" x2="660" y2="120" class="a"/>
+  <line x1="310" y1="170" x2="600" y2="170" class="a"/>
+  <line x1="710" y1="168" x2="762" y2="145" class="a"/>
+  <text x="360" y="210" class="s">Feedforward ANC: reference mic predicts noise; error mic measures residual to drive learning.</text>
+</svg>
+</div>
+<table>
+  <tr><th>Type</th><th>Mics</th><th>Best for</th><th>Tradeoff</th></tr>
+  <tr><td><b>Feedforward</b></td><td>Reference + error</td><td>Predictable/periodic noise (engine, fan)</td><td>Needs a clean upstream reference</td></tr>
+  <tr><td><b>Feedback</b></td><td>Error only</td><td>Broadband, headphones</td><td>Limited bandwidth, stability-sensitive</td></tr>
+  <tr><td><b>Hybrid</b></td><td>Both</td><td>Best real-world (premium headphones)</td><td>Most complex</td></tr>
+</table>
+
+<h2 id="fxlms">3. The FxLMS algorithm (what we'll implement)</h2>
+<p>Plain LMS fails here because the anti-noise passes through the <b>secondary path</b> <code>S(z)</code> (speaker + air + mic) before reaching the error mic. FxLMS fixes this by filtering the reference through an estimate <code>Ŝ(z)</code> of that path before the update — hence "filtered-x."</p>
+<span class="eq">y(n) = wᵀ(n) · x(n)                 // anti-noise the filter outputs
+x'(n) = ŝ(n) ∗ x(n)                // reference filtered by secondary-path estimate
+e(n) = d(n) − [ s(n) ∗ y(n) ]      // residual at the error mic
+w(n+1) = w(n) + μ · x'(n) · e(n)   // filtered-x LMS update</span>
+<ul>
+  <li><b>Secondary-path identification:</b> before/while running, we estimate <code>Ŝ(z)</code> (often by injecting low-level white noise and adapting). We'll include this as an explicit step the user can watch.</li>
+  <li><b>Primary path <code>P(z)</code>:</b> noise→error-mic acoustic path; in simulation we define it; the filter implicitly learns to invert it via <code>S</code>.</li>
+  <li><b>Convergence</b> depends on μ, filter length, and how good <code>Ŝ</code> is.</li>
+</ul>
+
+<h2 id="latency">4. The latency reality (the crux)</h2>
+<p>For cancellation, anti-noise must arrive within a small fraction of the noise period. The usable upper frequency is roughly set by the loop delay:</p>
+<span class="eq">f_max ≈ 1 / (2 · total_loop_delay)</span>
+<table>
+  <tr><th>System</th><th>Loop delay</th><th>Realistic ANC ceiling</th></tr>
+  <tr><td>Dedicated ANC chip (headphones)</td><td>~10–50 µs</td><td>up to ~1–2 kHz</td></tr>
+  <tr><td>Good audio DSP</td><td>~1 ms</td><td>a few hundred Hz</td></tr>
+  <tr><td><b>Browser (Web Audio)</b></td><td><b>~20–100 ms</b></td><td><b>only a few Hz — i.e., not viable for live broadband</b></td></tr>
+</table>
+<div class="warn"><b>Conclusion:</b> we cannot honestly claim real-time acoustic ANC in a browser. We therefore make the cancellation engine a <b>simulation</b> (we control the sample timing precisely, so FxLMS genuinely works and we can show 10–30 dB reduction), and offer real audio only as a <b>narrowband, headphone-based illustration</b> with the limitation stated plainly. This keeps the app scientifically honest — important for your consulting brand.</div>
+
+<h2 id="arch">5. Proposed app architecture</h2>
+<div class="q"><b>★ Decision 1 — what "real" means here.</b> Recommended scope:
+<ol style="margin:6px 0">
+  <li><b>Simulation mode (primary):</b> generate noise (engine hum, fan, traffic, tones, broadband), model <code>P(z)</code> and <code>S(z)</code>, run FxLMS, and show the residual shrink — with live "before vs after" listening rendered from the simulation. <span class="pill">Physically correct, controllable, provably effective.</span></li>
+  <li><b>Real-audio demo (secondary, optional):</b> use the mic to capture ambient noise and play a best-effort anti-noise through headphones for <b>low-frequency / narrowband</b> cases, with an on-screen latency readout and an explicit "illustrative only" notice.</li>
+</ol>
+<b>Do you accept the simulation-first framing, or did you have a specific real-cancellation use case in mind (e.g., a hardware target, headphones, a fixed tonal noise) that changes this?</b></div>
+
+<h3>5.1 Tech stack</h3>
+<ul>
+  <li><b>Web Audio + AudioWorklet</b> for signal generation, the FxLMS loop, and playback.</li>
+  <li><b>Canvas</b> for real-time time/frequency/attenuation plots.</li>
+  <li><b>Optional WebAssembly</b> for the adaptive loop if needed.</li>
+  <li><b>Noise library:</b> synthetic tones &amp; harmonics (engine/fan), filtered broadband (traffic/HVAC), plus optional user upload.</li>
+</ul>
+
+<h3>5.2 Signal flow (simulation mode)</h3>
+<span class="eq">noise x(n) ──► P(z) ──► d(n)  (noise at the ear)
+x(n) ──► W(z) ──► y(n) ──► S(z) ──► anti-noise at the ear
+e(n) = d(n) − anti-noise          (residual = what you'd still hear)
+x'(n) = Ŝ(z)∗x(n);  W += μ·x'·e   (FxLMS adaptation)
+output: play e(n) (after) vs d(n) (before); attenuation meter</span>
+
+<h2 id="metrics">6. Metrics &amp; visualizations</h2>
+<h3>Primary KPI — Noise attenuation</h3>
+<span class="eq">Attenuation(dB) = 10·log₁₀( E[d²(n)] / E[e²(n)] )   (overall and per-frequency)</span>
+<ul>
+  <li><b>Attenuation spectrum</b> — dB reduction vs frequency (shows the low-frequency win and the high-frequency limit clearly).</li>
+  <li><b>Time waveform</b> — noise vs residual overlaid, shrinking as it converges.</li>
+  <li><b>Convergence curve</b> — attenuation vs time.</li>
+  <li><b>Secondary-path estimate <code>Ŝ</code></b> — show the identification step succeed.</li>
+  <li><b>A/B listen</b> — "ANC off" (hear <code>d</code>) vs "ANC on" (hear <code>e</code>) — the emotional payoff.</li>
+  <li><b>Spectrogram / waterfall</b> (optional) — watch a tone vanish.</li>
+</ul>
+
+<h2 id="ui">7. Proposed UI layout</h2>
+<ul>
+  <li><b>Left control panel:</b> noise type (tone/engine/fan/traffic/broadband) + level; ANC architecture (feedforward/feedback/hybrid); μ step size; filter length; secondary-path mismatch slider (to show robustness); ANC on/off; "identify Ŝ" button.</li>
+  <li><b>Center/right dashboard:</b> big attenuation-vs-time chart; attenuation spectrum; before/after waveforms; A/B audition buttons.</li>
+  <li><b>Top status bar:</b> overall dB reduction, convergence state, simulated loop-latency readout + the frequency ceiling it implies.</li>
+</ul>
+
+<h2 id="plan">8. Suggested build phases</h2>
+<table>
+  <tr><th>Phase</th><th>Deliverable</th></tr>
+  <tr><td>1</td><td>Sim engine: noise gen + P(z)/S(z) models + FxLMS + attenuation plot (prove it cancels a tone)</td></tr>
+  <tr><td>2</td><td>Secondary-path identification step; μ / length controls; convergence curve</td></tr>
+  <tr><td>3</td><td>Attenuation spectrum + before/after A/B listening (the payoff)</td></tr>
+  <tr><td>4</td><td>Noise library (engine/fan/traffic/broadband) + path-mismatch robustness demo</td></tr>
+  <tr><td>5</td><td>Feedback / hybrid architectures; spectrogram</td></tr>
+  <tr><td>6</td><td>Optional real-audio narrowband demo with latency disclosure</td></tr>
+</table>
+
+<h2 id="aec">9. How ANC relates to your AEC project</h2>
+<table>
+  <tr><th></th><th>AEC (echo cancellation)</th><th>ANC (noise cancellation)</th></tr>
+  <tr><td>Goal</td><td>Remove echo <b>digitally</b> from the mic signal</td><td>Remove noise <b>acoustically</b> in the air</td></tr>
+  <tr><td>Reference</td><td>Clean digital far-end (we own it)</td><td>Mic-sensed ambient noise (must measure it)</td></tr>
+  <tr><td>Output</td><td>A cleaned <b>signal</b> (sent onward)</td><td>A physical <b>anti-sound</b> (played out)</td></tr>
+  <tr><td>Core algo</td><td>NLMS + DTD + residual suppression</td><td>FxLMS (+ secondary-path ID)</td></tr>
+  <tr><td>Latency</td><td>Tolerant (digital subtraction)</td><td>Brutal (must be acoustically in-time)</td></tr>
+  <tr><td>Browser feasibility</td><td><b>High</b> (digital; WebRTC does it)</td><td><b>Simulation, not live broadband</b></td></tr>
+</table>
+<p>They share the adaptive-filter backbone, so we can reuse a common DSP core (adaptive FIR, convolution, FFT, plotting) across both apps.</p>
+
+<h2 id="questions">10. Open questions for your review</h2>
+<div class="q"><b>Q1.</b> Do you accept <b>simulation-first</b> as the honest core, or is there a concrete real-cancellation target (specific hardware, headphones, or a fixed tonal noise like a fan/engine) you want us to aim at?</div>
+<div class="q"><b>Q2.</b> Which ANC architecture is the priority for v1 — <b>feedforward</b> (clearest to teach), feedback, or hybrid?</div>
+<div class="q"><b>Q3.</b> Audience — engineering demo, teaching tool, or client-facing showcase? (Drives how much theory vs. polish.)</div>
+<div class="q"><b>Q4.</b> Which noise types matter most to you — tonal (engine/fan), broadband (HVAC/traffic), or user-uploaded recordings?</div>
+<div class="q"><b>Q5.</b> Should we expose the <b>secondary-path mismatch</b> control? It's the best way to teach why ANC is fragile — but adds UI complexity.</div>
+<div class="q"><b>Q6.</b> Shared DSP core with the AEC app (one codebase, two front-ends) — desirable, or keep them fully independent?</div>
+<div class="q"><b>Q7.</b> Visual style — dark technical dashboard or lighter client-facing look (consistent with the AEC app)?</div>
+
+<footer>
+ANC design doc · for review · v1 · algorithm: FxLMS with secondary-path identification · KPI: per-band attenuation (dB) · core is simulation due to browser latency limits
+</footer>
+
+</div><!-- /lang=en -->
+
+<div lang="ja">
+
+<div class="hero">
+  <span class="tag">設計ドキュメント · レビュー用</span>
+  <h1>アクティブノイズキャンセリング (ANC)</h1>
+  <p>マイクで周囲のノイズを検知し、スピーカーから「アンチノイズ」を放射して破壊的干渉でノイズを打ち消す、インタラクティブな Web アプリ — FxLMS 適応アルゴリズムを使用します。</p>
+</div>
+
+<div class="callout">
+<b>本ドキュメントの目的:</b> ANC の仕組みと、本アプリをどう構築するかの提案を、コーディングに着手する前のレビュー用に説明します。意思決定ポイントは黄色のボックスで明示し、末尾でまとめます。
+</div>
+
+<div class="warn">
+<b>⚠ 最初にお読みください — 誠実さに関するセクション。</b> 実際の音響 ANC には厳しい<b>因果律／レイテンシ要件</b>があります。アンチノイズは、ノイズと<i>まったく同じ瞬間に</i>、位相を反転した状態でキャンセル地点に到達しなければなりません。これにはマイクロ秒〜低ミリ秒のループレイテンシが要求されます。<b>Web ブラウザのオーディオ経路は約 20〜100 ms</b> — ライブの広帯域音を音響的にキャンセルするにはあまりに遅すぎます。そこで本アプリの<b>リアルタイムキャンセリングのコアは、物理的に正確なシミュレーション</b>とします(タイミングを正確に制御でき、キャンセルを証明できます)。加えて、誠実で限定的な実音声デモを提供します。これは合意すべき最も重要な点です — Decision 1 を参照してください。
+</div>
+
+<div class="toc">
+<b>目次</b><br>
+<a href="#problem-ja">1. アイデア</a> ·
+<a href="#types-ja">2. アーキテクチャ</a> ·
+<a href="#fxlms-ja">3. FxLMS アルゴリズム</a> ·
+<a href="#latency-ja">4. レイテンシの現実</a> ·
+<a href="#arch-ja">5. アプリのアーキテクチャ</a> ·
+<a href="#metrics-ja">6. 指標とビジュアル</a> ·
+<a href="#ui-ja">7. UI レイアウト</a> ·
+<a href="#plan-ja">8. 構築フェーズ</a> ·
+<a href="#aec-ja">9. AEC と ANC</a> ·
+<a href="#questions-ja">10. 未解決の論点</a>
+</div>
+
+<h2 id="problem-ja">1. 核心となるアイデア</h2>
+<p>振幅が等しく位相が逆の 2 つの音波は、加算すると無音になります(破壊的干渉)。ANC は入ってくるノイズを測定し、その鏡像(「アンチノイズ」)を計算して再生し、対象点(例えば耳の位置)で両者を打ち消します。</p>
+<span class="eq">noise(t) + anti-noise(t) ≈ 0    when    anti-noise(t) = −noise(t)</span>
+<p>課題は、システムがノイズを事前に知らないこと、そしてスピーカー→対象点の経路がアンチノイズに色付け(周波数特性の変化)と遅延を加えることです。そのため、あらかじめ補償することを学習する適応フィルタが必要になります。それが <b>FxLMS</b> です。</p>
+
+<h2 id="types-ja">2. ANC アーキテクチャ</h2>
+<div class="diagram">
+<svg viewBox="0 0 860 230" width="100%" role="img" aria-label="フィードフォワード ANC 図">
+  <style> .b{fill:#f0fdfa;stroke:#0d9488;stroke-width:1.5} .t{font:13px sans-serif;fill:#1e293b} .s{font:11px sans-serif;fill:#64748b} .a{stroke:#334155;stroke-width:1.6;fill:none;marker-end:url(#ar3-ja)} .ar{fill:#334155}</style>
+  <defs><marker id="ar3-ja" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="ar"/></marker></defs>
+  <rect x="20" y="95" width="110" height="40" rx="8" class="b" style="fill:#fef2f2;stroke:#dc2626"/><text x="75" y="120" text-anchor="middle" class="t">ノイズ源</text>
+  <rect x="190" y="40" width="120" height="40" rx="8" class="b"/><text x="250" y="65" text-anchor="middle" class="t">🎤 参照マイク</text>
+  <rect x="190" y="150" width="120" height="40" rx="8" class="b"/><text x="250" y="175" text-anchor="middle" class="t">一次経路 P(z)</text>
+  <rect x="390" y="40" width="140" height="40" rx="8" class="b" style="fill:#ede9fe;stroke:#7c3aed"/><text x="460" y="60" text-anchor="middle" class="t">ANC フィルタ W(z)</text><text x="460" y="74" text-anchor="middle" class="s">FxLMS</text>
+  <rect x="600" y="40" width="110" height="40" rx="8" class="b"/><text x="655" y="65" text-anchor="middle" class="t">🔊 アンチノイズ</text>
+  <rect x="600" y="150" width="110" height="40" rx="8" class="b"/><text x="655" y="175" text-anchor="middle" class="t">二次経路 S(z)</text>
+  <circle cx="780" cy="135" r="20" class="b"/><text x="780" y="140" text-anchor="middle" class="t">Σ</text>
+  <rect x="600" y="105" width="0" height="0"/>
+  <text x="800" y="115" class="s">エラーマイク e(n)</text>
+  <line x1="130" y1="112" x2="190" y2="60" class="a"/>
+  <line x1="130" y1="118" x2="190" y2="168" class="a"/>
+  <line x1="310" y1="60" x2="390" y2="60" class="a"/>
+  <line x1="530" y1="60" x2="600" y2="60" class="a"/>
+  <line x1="710" y1="62" x2="660" y2="120" class="a"/>
+  <line x1="310" y1="170" x2="600" y2="170" class="a"/>
+  <line x1="710" y1="168" x2="762" y2="145" class="a"/>
+  <text x="360" y="210" class="s">フィードフォワード ANC: 参照マイクがノイズを予測し、エラーマイクが残差を測定して学習を駆動する。</text>
+</svg>
+</div>
+<table>
+  <tr><th>タイプ</th><th>マイク</th><th>適した用途</th><th>トレードオフ</th></tr>
+  <tr><td><b>フィードフォワード</b></td><td>参照 + エラー</td><td>予測可能／周期的なノイズ(エンジン、ファン)</td><td>上流側にクリーンな参照が必要</td></tr>
+  <tr><td><b>フィードバック</b></td><td>エラーのみ</td><td>広帯域、ヘッドフォン</td><td>帯域幅が限られ、安定性に敏感</td></tr>
+  <tr><td><b>ハイブリッド</b></td><td>両方</td><td>実環境で最良(高級ヘッドフォン)</td><td>最も複雑</td></tr>
+</table>
+
+<h2 id="fxlms-ja">3. FxLMS アルゴリズム(実装するもの)</h2>
+<p>素の LMS はここでは機能しません。アンチノイズはエラーマイクに届く前に<b>二次経路</b> <code>S(z)</code>(スピーカー + 空気 + マイク)を通過するためです。FxLMS はこれを、更新の前に参照をその経路の推定値 <code>Ŝ(z)</code> でフィルタリングすることで解決します — これが「フィルタード x(filtered-x)」の由来です。</p>
+<span class="eq">y(n) = wᵀ(n) · x(n)                 // anti-noise the filter outputs
+x'(n) = ŝ(n) ∗ x(n)                // reference filtered by secondary-path estimate
+e(n) = d(n) − [ s(n) ∗ y(n) ]      // residual at the error mic
+w(n+1) = w(n) + μ · x'(n) · e(n)   // filtered-x LMS update</span>
+<ul>
+  <li><b>二次経路の同定:</b> 実行前または実行中に、<code>Ŝ(z)</code> を推定します(多くの場合、低レベルのホワイトノイズを注入して適応させます)。これをユーザーが観察できる明示的なステップとして組み込みます。</li>
+  <li><b>一次経路 <code>P(z)</code>:</b> ノイズ→エラーマイクの音響経路。シミュレーションでは我々が定義し、フィルタは <code>S</code> を介してこれを逆転させることを暗黙的に学習します。</li>
+  <li><b>収束</b>は μ、フィルタ長、そして <code>Ŝ</code> の精度に依存します。</li>
+</ul>
+
+<h2 id="latency-ja">4. レイテンシの現実(核心)</h2>
+<p>キャンセルのためには、アンチノイズがノイズ周期のごく一部以内に到達しなければなりません。利用可能な上限周波数は、概ねループ遅延によって決まります。</p>
+<span class="eq">f_max ≈ 1 / (2 · total_loop_delay)</span>
+<table>
+  <tr><th>システム</th><th>ループ遅延</th><th>現実的な ANC の上限</th></tr>
+  <tr><td>専用 ANC チップ(ヘッドフォン)</td><td>約 10〜50 µs</td><td>最大で約 1〜2 kHz</td></tr>
+  <tr><td>優れたオーディオ DSP</td><td>約 1 ms</td><td>数百 Hz 程度</td></tr>
+  <tr><td><b>ブラウザ (Web Audio)</b></td><td><b>約 20〜100 ms</b></td><td><b>数 Hz のみ — つまりライブ広帯域には実用的でない</b></td></tr>
+</table>
+<div class="warn"><b>結論:</b> ブラウザでリアルタイムの音響 ANC を誠実に主張することはできません。そこでキャンセリングエンジンは<b>シミュレーション</b>とします(サンプルタイミングを正確に制御できるため、FxLMS は本当に機能し、10〜30 dB の低減を示せます)。実音声については、<b>狭帯域・ヘッドフォンベースの説明用</b>としてのみ提供し、制約を率直に明示します。これにより、アプリは科学的に誠実なものに保たれます — あなたのコンサルティングブランドにとって重要な点です。</div>
+
+<h2 id="arch-ja">5. 提案するアプリのアーキテクチャ</h2>
+<div class="q"><b>★ Decision 1 — ここでの「リアル」の意味。</b> 推奨するスコープ:
+<ol style="margin:6px 0">
+  <li><b>シミュレーションモード(主軸):</b> ノイズ(エンジン音、ファン、交通、トーン、広帯域)を生成し、<code>P(z)</code> と <code>S(z)</code> をモデル化し、FxLMS を実行して残差が縮小する様子を示します — シミュレーションからレンダリングしたライブの「適用前 vs 適用後」の試聴付き。<span class="pill">物理的に正しく、制御可能で、効果を証明できる。</span></li>
+  <li><b>実音声デモ(補助、任意):</b> マイクで周囲のノイズを取り込み、<b>低周波／狭帯域</b>のケースに対してベストエフォートのアンチノイズをヘッドフォンから再生します。画面上にレイテンシ表示と「あくまで説明用」の明示的な注記を添えます。</li>
+</ol>
+<b>シミュレーション優先の枠組みを受け入れていただけますか。それとも、これを変えるような具体的な実キャンセルのユースケース(例えばハードウェアターゲット、ヘッドフォン、固定トーンのノイズ)を想定されていますか。</b></div>
+
+<h3>5.1 技術スタック</h3>
+<ul>
+  <li>信号生成、FxLMS ループ、再生のための <b>Web Audio + AudioWorklet</b>。</li>
+  <li>リアルタイムの時間／周波数／減衰プロットのための <b>Canvas</b>。</li>
+  <li>必要に応じて適応ループ用の <b>オプションの WebAssembly</b>。</li>
+  <li><b>ノイズライブラリ:</b> 合成トーンと倍音(エンジン／ファン)、フィルタリングした広帯域(交通／HVAC)、加えて任意のユーザーアップロード。</li>
+</ul>
+
+<h3>5.2 信号フロー(シミュレーションモード)</h3>
+<span class="eq">noise x(n) ──► P(z) ──► d(n)  (noise at the ear)
+x(n) ──► W(z) ──► y(n) ──► S(z) ──► anti-noise at the ear
+e(n) = d(n) − anti-noise          (residual = what you'd still hear)
+x'(n) = Ŝ(z)∗x(n);  W += μ·x'·e   (FxLMS adaptation)
+output: play e(n) (after) vs d(n) (before); attenuation meter</span>
+
+<h2 id="metrics-ja">6. 指標と可視化</h2>
+<h3>主要 KPI — ノイズ減衰量</h3>
+<span class="eq">Attenuation(dB) = 10·log₁₀( E[d²(n)] / E[e²(n)] )   (overall and per-frequency)</span>
+<ul>
+  <li><b>減衰スペクトル</b> — 周波数に対する dB 低減量(低周波での効果と高周波での限界を明確に示す)。</li>
+  <li><b>時間波形</b> — ノイズ vs 残差を重ね描きし、収束につれて縮小する様子を示す。</li>
+  <li><b>収束曲線</b> — 時間に対する減衰量。</li>
+  <li><b>二次経路推定 <code>Ŝ</code></b> — 同定ステップが成功する様子を示す。</li>
+  <li><b>A/B 試聴</b> — 「ANC オフ」(<code>d</code> を聞く)vs「ANC オン」(<code>e</code> を聞く)— 感情に訴える成果。</li>
+  <li><b>スペクトログラム／ウォーターフォール</b>(任意)— トーンが消えていく様子を観察。</li>
+</ul>
+
+<h2 id="ui-ja">7. 提案する UI レイアウト</h2>
+<ul>
+  <li><b>左側のコントロールパネル:</b> ノイズタイプ(トーン／エンジン／ファン／交通／広帯域)とレベル、ANC アーキテクチャ(フィードフォワード／フィードバック／ハイブリッド)、μ ステップサイズ、フィルタ長、二次経路ミスマッチスライダー(ロバスト性を示すため)、ANC のオン／オフ、「Ŝ を同定」ボタン。</li>
+  <li><b>中央／右のダッシュボード:</b> 大きな減衰量 vs 時間チャート、減衰スペクトル、適用前／後の波形、A/B 試聴ボタン。</li>
+  <li><b>上部のステータスバー:</b> 全体の dB 低減量、収束状態、シミュレートされたループレイテンシ表示とそれが示す周波数上限。</li>
+</ul>
+
+<h2 id="plan-ja">8. 推奨する構築フェーズ</h2>
+<table>
+  <tr><th>フェーズ</th><th>成果物</th></tr>
+  <tr><td>1</td><td>シミュレーションエンジン: ノイズ生成 + P(z)/S(z) モデル + FxLMS + 減衰プロット(トーンをキャンセルできることを証明)</td></tr>
+  <tr><td>2</td><td>二次経路の同定ステップ、μ／フィルタ長コントロール、収束曲線</td></tr>
+  <tr><td>3</td><td>減衰スペクトル + 適用前／後の A/B 試聴(成果)</td></tr>
+  <tr><td>4</td><td>ノイズライブラリ(エンジン／ファン／交通／広帯域)+ 経路ミスマッチのロバスト性デモ</td></tr>
+  <tr><td>5</td><td>フィードバック／ハイブリッドアーキテクチャ、スペクトログラム</td></tr>
+  <tr><td>6</td><td>レイテンシ開示付きの任意の実音声狭帯域デモ</td></tr>
+</table>
+
+<h2 id="aec-ja">9. ANC とあなたの AEC プロジェクトの関係</h2>
+<table>
+  <tr><th></th><th>AEC(エコーキャンセリング)</th><th>ANC(ノイズキャンセリング)</th></tr>
+  <tr><td>目的</td><td>マイク信号からエコーを<b>デジタル的に</b>除去する</td><td>空気中でノイズを<b>音響的に</b>除去する</td></tr>
+  <tr><td>参照</td><td>クリーンなデジタル遠端信号(我々が保有)</td><td>マイクで検知した周囲ノイズ(測定する必要がある)</td></tr>
+  <tr><td>出力</td><td>クリーンになった<b>信号</b>(後段へ送る)</td><td>物理的な<b>アンチサウンド</b>(放射する)</td></tr>
+  <tr><td>コアアルゴリズム</td><td>NLMS + DTD + 残差抑圧</td><td>FxLMS(+ 二次経路同定)</td></tr>
+  <tr><td>レイテンシ</td><td>許容的(デジタル減算)</td><td>過酷(音響的にタイミングが合っている必要がある)</td></tr>
+  <tr><td>ブラウザでの実現性</td><td><b>高い</b>(デジタル、WebRTC が実現済み)</td><td><b>シミュレーションであり、ライブ広帯域ではない</b></td></tr>
+</table>
+<p>両者は適応フィルタの基盤を共有するため、共通の DSP コア(適応 FIR、畳み込み、FFT、プロット)を両アプリにまたがって再利用できます。</p>
+
+<h2 id="questions-ja">10. レビュー用の未解決の論点</h2>
+<div class="q"><b>Q1.</b> 誠実なコアとして<b>シミュレーション優先</b>を受け入れていただけますか。それとも、我々が狙うべき具体的な実キャンセルのターゲット(特定のハードウェア、ヘッドフォン、あるいはファン／エンジンのような固定トーンのノイズ)はありますか。</div>
+<div class="q"><b>Q2.</b> v1 で優先する ANC アーキテクチャはどれですか — <b>フィードフォワード</b>(最も教えやすい)、フィードバック、ハイブリッド。</div>
+<div class="q"><b>Q3.</b> 対象者 — エンジニアリングデモ、教育ツール、それともクライアント向けのショーケース。(理論と仕上げのバランスを左右します。)</div>
+<div class="q"><b>Q4.</b> 最も重要なノイズタイプはどれですか — トーン系(エンジン／ファン)、広帯域(HVAC／交通)、あるいはユーザーがアップロードした録音。</div>
+<div class="q"><b>Q5.</b> <b>二次経路ミスマッチ</b>コントロールを公開すべきですか。ANC がなぜ脆弱なのかを教えるのに最良の方法ですが、UI が複雑になります。</div>
+<div class="q"><b>Q6.</b> AEC アプリと DSP コアを共有する(1 つのコードベース、2 つのフロントエンド)— 望ましいですか、それとも完全に独立させますか。</div>
+<div class="q"><b>Q7.</b> ビジュアルスタイル — ダークなテクニカルダッシュボード、それとも(AEC アプリと一貫した)より明るいクライアント向けの見た目。</div>
+
+<footer>
+ANC 設計ドキュメント · レビュー用 · v1 · アルゴリズム: 二次経路同定付き FxLMS · KPI: バンド別減衰量 (dB) · ブラウザのレイテンシ制約によりコアはシミュレーション
+</footer>
+
+</div><!-- /lang=ja -->
+
+<script>
+(function(){
+  function setLang(l){
+    document.body.classList.toggle('lang-en', l==='en');
+    document.body.classList.toggle('lang-ja', l==='ja');
+    document.documentElement.lang=l;
+    var en=document.getElementById('enBtn'), ja=document.getElementById('jaBtn');
+    if(en){ en.style.background=l==='en'?'#4f46e5':'transparent'; en.style.color=l==='en'?'#fff':'inherit'; }
+    if(ja){ ja.style.background=l==='ja'?'#4f46e5':'transparent'; ja.style.color=l==='ja'?'#fff':'inherit'; }
+    try{ localStorage.setItem('docs-lang', l); }catch(e){}
+  }
+  window.setLang=setLang;
+  var saved='en';
+  try{ saved=localStorage.getItem('docs-lang') || ((navigator.language||'').toLowerCase().indexOf('ja')===0?'ja':'en'); }catch(e){}
+  setLang(saved);
+})();
+</script>
+</body>
+</html>

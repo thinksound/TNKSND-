@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVDR vs Conventional Beamformer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  html, body { background: #0b1020; }
+  input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:9999px; background:#1e293b; outline:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:#6366f1; cursor:pointer; border:2px solid #c7d2fe; box-shadow:0 0 6px rgba(99,102,241,.6); }
+  input[type=range]::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:#6366f1; cursor:pointer; border:2px solid #c7d2fe; }
+  .card { background:#111827; border:1px solid #1f2937; }
+  .eq { font-family: ui-monospace, monospace; background:#0f172a; border:1px solid #1e293b; border-radius:6px; padding:2px 6px; }
+  body.lang-en [lang=ja] { display:none; }
+  body.lang-ja [lang=en] { display:none; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen">
+<div class="max-w-[1500px] mx-auto px-4 py-6">
+
+  <header class="mb-5 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight"
+          data-en="📡 MVDR vs. Conventional Beamformer" data-ja="📡 MVDR と従来型ビームフォーマの比較">📡 MVDR vs. Conventional Beamformer</h1>
+      <p class="text-slate-400 text-sm mt-1"
+         data-en="Uniform linear array (ULA). Compare the fixed delay-and-sum beamformer against the adaptive MVDR / Capon beamformer — watch MVDR carve nulls onto interferers in real time."
+         data-ja="等間隔直線アレイ（ULA）。固定の遅延和（delay-and-sum）ビームフォーマと、適応型の MVDR / Capon ビームフォーマを比較 — MVDR が干渉源にリアルタイムでヌルを形成する様子を観察します。">
+        Uniform linear array (ULA).
+      </p>
+    </div>
+    <div class="shrink-0 flex items-center gap-2">
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button>
+        <button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button>
+      </div>
+      <a href="instructions.html" class="px-3 py-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+         data-en="📖 Instructions" data-ja="📖 説明">📖 Instructions</a>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- ================= CONTROLS ================= -->
+    <section class="lg:col-span-1 card rounded-xl p-5 space-y-4 self-start">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-white" data-en="Scenario" data-ja="シナリオ">Scenario</h2>
+        <div class="flex flex-wrap gap-1 justify-end">
+          <button data-preset="jammer"  class="preset px-2 py-1 text-[11px] rounded-md bg-slate-700 hover:bg-slate-600" data-en="1 Jammer" data-ja="妨害1">1 Jammer</button>
+          <button data-preset="two"     class="preset px-2 py-1 text-[11px] rounded-md bg-slate-700 hover:bg-slate-600" data-en="2 Jammers" data-ja="妨害2">2 Jammers</button>
+          <button data-preset="white"   class="preset px-2 py-1 text-[11px] rounded-md bg-slate-700 hover:bg-slate-600" data-en="White-noise limit" data-ja="白色雑音の極限">White-noise limit</button>
+        </div>
+      </div>
+
+      <!-- Array -->
+      <div>
+        <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="# Microphones (M)" data-ja="マイク数 (M)"># Microphones (M)</label>
+          <span class="font-mono text-indigo-300" id="v_M">6</span></div>
+        <input id="M" type="range" min="2" max="10" step="1" value="6" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Spacing (d)" data-ja="間隔 (d)">Spacing (d)</label>
+          <span class="font-mono text-indigo-300"><span id="v_d">8.0</span> cm · <span id="v_dl">—</span> λ</span></div>
+        <input id="d" type="range" min="1" max="30" step="0.1" value="8" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Frequency (f)" data-ja="周波数 (f)">Frequency (f)</label>
+          <span class="font-mono text-indigo-300"><span id="v_f">2000</span> Hz</span></div>
+        <input id="f" type="range" min="200" max="5000" step="10" value="2000" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1"><label class="text-emerald-300" data-en="Look direction (θ₀)" data-ja="ルック方向 (θ₀)">Look direction (θ₀)</label>
+          <span class="font-mono text-emerald-300"><span id="v_look">90</span>°</span></div>
+        <input id="look" type="range" min="0" max="180" step="1" value="90" class="w-full">
+      </div>
+
+      <hr class="border-slate-700">
+
+      <!-- Interferer 1 -->
+      <div class="space-y-2">
+        <label class="flex items-center gap-2 text-sm font-semibold text-red-300">
+          <input id="i1on" type="checkbox" checked class="accent-red-500"> <span data-en="Interferer 1" data-ja="干渉源 1">Interferer 1</span>
+        </label>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400" data-en="Angle" data-ja="角度">Angle</span>
+            <span class="font-mono text-red-300"><span id="v_i1a">55</span>°</span></div>
+          <input id="i1a" type="range" min="0" max="180" step="1" value="55" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400" data-en="Power (INR)" data-ja="パワー (INR)">Power (INR)</span>
+            <span class="font-mono text-red-300"><span id="v_i1p">25</span> dB</span></div>
+          <input id="i1p" type="range" min="0" max="40" step="1" value="25" class="w-full">
+        </div>
+      </div>
+
+      <!-- Interferer 2 -->
+      <div class="space-y-2">
+        <label class="flex items-center gap-2 text-sm font-semibold text-red-300">
+          <input id="i2on" type="checkbox" class="accent-red-500"> <span data-en="Interferer 2" data-ja="干渉源 2">Interferer 2</span>
+        </label>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400" data-en="Angle" data-ja="角度">Angle</span>
+            <span class="font-mono text-red-300"><span id="v_i2a">125</span>°</span></div>
+          <input id="i2a" type="range" min="0" max="180" step="1" value="125" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="text-slate-400" data-en="Power (INR)" data-ja="パワー (INR)">Power (INR)</span>
+            <span class="font-mono text-red-300"><span id="v_i2p">25</span> dB</span></div>
+          <input id="i2p" type="range" min="0" max="40" step="1" value="25" class="w-full">
+        </div>
+      </div>
+
+      <hr class="border-slate-700">
+
+      <!-- Noise / loading -->
+      <div>
+        <div class="flex justify-between text-sm mb-1"><label class="text-slate-300" data-en="Sensor noise / diagonal loading" data-ja="センサ雑音 / 対角ローディング">Sensor noise / diagonal loading</label>
+          <span class="font-mono text-sky-300"><span id="v_n">0</span> dB</span></div>
+        <input id="n" type="range" min="-30" max="40" step="1" value="0" class="w-full">
+        <p class="text-[11px] text-slate-500 mt-1" data-en="Raise this and MVDR → conventional (white-noise optimal)." data-ja="これを上げると MVDR → 従来型（白色雑音に最適）に近づく。">Raise this and MVDR → conventional (white-noise optimal).</p>
+      </div>
+
+      <!-- toggles -->
+      <div class="flex gap-4 text-sm pt-1">
+        <label class="flex items-center gap-2"><input id="showCbf" type="checkbox" checked class="accent-slate-400"> <span class="text-slate-300" data-en="Conventional" data-ja="従来型">Conventional</span></label>
+        <label class="flex items-center gap-2"><input id="showMvdr" type="checkbox" checked class="accent-indigo-500"> <span class="text-indigo-300">MVDR</span></label>
+      </div>
+    </section>
+
+    <!-- ================= VISUALS ================= -->
+    <section class="lg:col-span-2 space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="card rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-white mb-2"><span data-en="Polar Beam Pattern" data-ja="極座標ビームパターン">Polar Beam Pattern</span> <span class="text-slate-500">dB</span></h2>
+          <div class="relative w-full" style="aspect-ratio:1/1;"><canvas id="polar" class="w-full h-full"></canvas></div>
+        </div>
+        <div class="card rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-white mb-2" data-en="Cartesian Beam Pattern" data-ja="直交ビームパターン">Cartesian Beam Pattern</h2>
+          <div class="relative w-full" style="height:300px;"><canvas id="cartesian"></canvas></div>
+          <p class="text-[11px] text-slate-500 mt-1" data-en="ULA pattern is symmetric about the array axis; shown 0–180°." data-ja="ULA のパターンはアレイ軸に対して対称 — 0–180° を表示。">ULA pattern is symmetric about the array axis; shown 0–180°.</p>
+        </div>
+      </div>
+
+      <!-- metrics -->
+      <div class="card rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-white mb-3" data-en="Performance Comparison" data-ja="性能比較">Performance Comparison</h2>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-slate-400 text-left border-b border-slate-700">
+            <th class="py-1 pr-4" data-en="Metric" data-ja="指標">Metric</th>
+            <th class="py-1 pr-4 text-slate-300" data-en="Conventional" data-ja="従来型">Conventional</th>
+            <th class="py-1 pr-4 text-indigo-300">MVDR</th>
+            <th class="py-1" data-en="Meaning" data-ja="意味">Meaning</th>
+          </tr></thead>
+          <tbody id="metricBody" class="font-mono"></tbody>
+        </table>
+        </div>
+        <div id="insight" class="mt-3 text-sm rounded-lg px-3 py-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-200"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= EXPLAINER ================= -->
+  <section lang="en" class="card rounded-xl p-6 mt-5 space-y-4 text-sm leading-relaxed">
+    <h2 class="text-lg font-semibold text-white">How MVDR works — and how it contrasts with traditional beamformers</h2>
+
+    <div class="grid md:grid-cols-2 gap-5">
+      <div>
+        <h3 class="text-slate-200 font-semibold mb-1">Conventional (delay-and-sum / "traditional")</h3>
+        <p class="text-slate-400">
+          Weights point straight at the look direction and never change:
+          <span class="eq">w = a(θ₀) / M</span>. The pattern depends <em>only</em> on array geometry —
+          fixed mainlobe, fixed ~−13 dB sidelobes for a uniform array. It is <strong>data-independent</strong>:
+          it has no idea where the interference is, so it cannot null it. It is optimal only for spatially
+          white noise.
+        </p>
+      </div>
+      <div>
+        <h3 class="text-indigo-200 font-semibold mb-1">MVDR / Capon (adaptive)</h3>
+        <p class="text-slate-400">
+          Minimise the <em>total output power</em> subject to a <strong>distortionless constraint</strong> —
+          unity gain toward the look direction:
+          <span class="eq">min wᴴRw s.t. wᴴa(θ₀)=1</span> &nbsp;⟹&nbsp;
+          <span class="eq">w = R⁻¹a(θ₀) / (a(θ₀)ᴴR⁻¹a(θ₀))</span>.
+          Because <span class="eq">R</span> (the spatial covariance) contains the interference, minimising power
+          forces <strong>deep nulls onto the interferers</strong> while protecting the target. It is
+          <strong>data-dependent</strong> and optimal in SINR.
+        </p>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/40 rounded-lg p-4">
+      <h3 class="text-white font-semibold mb-1">The key relationship</h3>
+      <p class="text-slate-400">
+        Set <span class="eq">R = σ²I</span> (white noise, no interferers — i.e. crank the loading slider up) and the MVDR solution
+        collapses exactly to <span class="eq">w = a(θ₀)/M</span> — the conventional beamformer. So conventional beamforming
+        is just MVDR's special case when nothing is worth nulling. The cost of MVDR's adaptivity is
+        <strong>white-noise gain</strong>: aggressive nulling can amplify uncorrelated sensor noise (see the WNG row),
+        which is why <strong>diagonal loading</strong> (the noise slider) is used to trade nulling depth for robustness.
+      </p>
+    </div>
+
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm border border-slate-700 rounded">
+      <thead><tr class="bg-slate-800/60 text-slate-300 text-left">
+        <th class="p-2 border-b border-slate-700">Property</th>
+        <th class="p-2 border-b border-slate-700">Conventional (delay-sum)</th>
+        <th class="p-2 border-b border-slate-700">Differential (prev. app)</th>
+        <th class="p-2 border-b border-slate-700">MVDR / Capon</th>
+      </tr></thead>
+      <tbody class="text-slate-400">
+        <tr class="border-b border-slate-800"><td class="p-2">Uses data statistics?</td><td class="p-2">No</td><td class="p-2">No</td><td class="p-2 text-indigo-300">Yes (covariance R)</td></tr>
+        <tr class="border-b border-slate-800"><td class="p-2">Nulls on interferers</td><td class="p-2">Fixed sidelobes only</td><td class="p-2">Fixed null(s) by design</td><td class="p-2 text-indigo-300">Adaptive, placed where needed</td></tr>
+        <tr class="border-b border-slate-800"><td class="p-2">Spacing regime</td><td class="p-2">≈ λ/2</td><td class="p-2">≪ λ (closely spaced)</td><td class="p-2">any (≤ λ/2 to avoid grating)</td></tr>
+        <tr class="border-b border-slate-800"><td class="p-2">Optimality</td><td class="p-2">White-noise SNR</td><td class="p-2">Fixed superdirective shape</td><td class="p-2 text-indigo-300">Max SINR (given R)</td></tr>
+        <tr><td class="p-2">Main weakness</td><td class="p-2">Can't reject interference</td><td class="p-2">Noise-sensitive, frequency-dependent</td><td class="p-2">WNG loss; needs R / loading</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="text-[12px] text-slate-500">
+      Model: narrowband ULA, steering vector aₘ(θ)=exp(j·m·(2πf d/c)cosθ), c=343 m/s,
+      R = σ²I + Σᵢ pᵢ aᵢaᵢᴴ. Both patterns normalised to 0 dB at the look direction.
+    </p>
+  </section>
+
+  <!-- ================= EXPLAINER (日本語) ================= -->
+  <section lang="ja" class="card rounded-xl p-6 mt-5 space-y-4 text-sm leading-relaxed">
+    <h2 class="text-lg font-semibold text-white">MVDR の仕組み — 従来型ビームフォーマとの違い</h2>
+
+    <div class="grid md:grid-cols-2 gap-5">
+      <div>
+        <h3 class="text-slate-200 font-semibold mb-1">従来型（遅延和 /「トラディショナル」）</h3>
+        <p class="text-slate-400">
+          重みはルック方向をまっすぐ向き、決して変化しません：
+          <span class="eq">w = a(θ₀) / M</span>。パターンはアレイ形状<em>のみ</em>に依存 —
+          固定のメインローブ、均一アレイでは約 −13 dB の固定サイドローブ。<strong>データ非依存</strong>で、
+          干渉源の位置を知らないため打ち消せません。空間的に白色な雑音に対してのみ最適です。
+        </p>
+      </div>
+      <div>
+        <h3 class="text-indigo-200 font-semibold mb-1">MVDR / Capon（適応型）</h3>
+        <p class="text-slate-400">
+          <strong>無歪拘束</strong>（ルック方向に利得1）のもとで<em>出力総電力</em>を最小化：
+          <span class="eq">min wᴴRw s.t. wᴴa(θ₀)=1</span> &nbsp;⟹&nbsp;
+          <span class="eq">w = R⁻¹a(θ₀) / (a(θ₀)ᴴR⁻¹a(θ₀))</span>。
+          <span class="eq">R</span>（空間共分散）が干渉を含むため、電力最小化はターゲットを保ちつつ
+          <strong>干渉源に深いヌル</strong>を強制します。<strong>データ依存</strong>で、SINR の意味で最適です。
+        </p>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/40 rounded-lg p-4">
+      <h3 class="text-white font-semibold mb-1">重要な関係</h3>
+      <p class="text-slate-400">
+        <span class="eq">R = σ²I</span>（白色雑音・干渉源なし — ローディングのスライダーを上げる）とすると、MVDR 解はちょうど
+        <span class="eq">w = a(θ₀)/M</span>（従来型ビームフォーマ）に一致します。つまり従来型は、打ち消すべきものが無いときの
+        MVDR の特別な場合です。MVDR の適応性の代償は<strong>白色雑音利得</strong>：積極的なヌル形成は無相関なセンサ雑音を
+        増幅し得ます（WNG 行を参照）。そのため<strong>対角ローディング</strong>（雑音スライダー）でヌルの深さと頑健性をトレードオフします。
+      </p>
+    </div>
+
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm border border-slate-700 rounded">
+      <thead><tr class="bg-slate-800/60 text-slate-300 text-left">
+        <th class="p-2 border-b border-slate-700">特性</th>
+        <th class="p-2 border-b border-slate-700">従来型（遅延和）</th>
+        <th class="p-2 border-b border-slate-700">差動（前のアプリ）</th>
+        <th class="p-2 border-b border-slate-700">MVDR / Capon</th>
+      </tr></thead>
+      <tbody class="text-slate-400">
+        <tr class="border-b border-slate-800"><td class="p-2">データ統計を使う？</td><td class="p-2">いいえ</td><td class="p-2">いいえ</td><td class="p-2 text-indigo-300">はい（共分散 R）</td></tr>
+        <tr class="border-b border-slate-800"><td class="p-2">干渉源へのヌル</td><td class="p-2">固定サイドローブのみ</td><td class="p-2">設計による固定ヌル</td><td class="p-2 text-indigo-300">適応的、必要な所に配置</td></tr>
+        <tr class="border-b border-slate-800"><td class="p-2">間隔の領域</td><td class="p-2">≈ λ/2</td><td class="p-2">≪ λ（近接配置）</td><td class="p-2">任意（グレーティング回避に ≤ λ/2）</td></tr>
+        <tr class="border-b border-slate-800"><td class="p-2">最適性</td><td class="p-2">白色雑音 SNR</td><td class="p-2">固定の超指向形状</td><td class="p-2 text-indigo-300">最大 SINR（R 既知）</td></tr>
+        <tr><td class="p-2">主な弱点</td><td class="p-2">干渉を抑圧できない</td><td class="p-2">雑音に敏感・周波数依存</td><td class="p-2">WNG 低下；R/ローディングが必要</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="text-[12px] text-slate-500">
+      モデル：狭帯域 ULA、ステアリングベクトル aₘ(θ)=exp(j·m·(2πf d/c)cosθ)、c=343 m/s、
+      R = σ²I + Σᵢ pᵢ aᵢaᵢᴴ。両パターンともルック方向で 0 dB に正規化。
+    </p>
+  </section>
+
+  <footer class="text-center text-xs text-slate-600 mt-6"
+          data-en="Educational simulation · narrowband far-field model · MVDR = Minimum Variance Distortionless Response"
+          data-ja="教育用シミュレーション · 狭帯域・遠方界モデル · MVDR = 最小分散無歪応答（Minimum Variance Distortionless Response）">Educational simulation · narrowband far-field model · MVDR = Minimum Variance Distortionless Response</footer>
+</div>
+
+<script>
+// ---------------- complex linear algebra ----------------
+const cadd=(a,b)=>[a[0]+b[0],a[1]+b[1]];
+const csub=(a,b)=>[a[0]-b[0],a[1]-b[1]];
+const cmul=(a,b)=>[a[0]*b[0]-a[1]*b[1], a[0]*b[1]+a[1]*b[0]];
+const cconj=a=>[a[0],-a[1]];
+const cabs=a=>Math.hypot(a[0],a[1]);
+const cdiv=(a,b)=>{const d=b[0]*b[0]+b[1]*b[1]; return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];};
+
+function cinv(A){
+  const n=A.length, M=[];
+  for(let i=0;i<n;i++){ M[i]=[];
+    for(let j=0;j<n;j++) M[i][j]=[A[i][j][0],A[i][j][1]];
+    for(let j=0;j<n;j++) M[i][n+j]=(i===j)?[1,0]:[0,0];
+  }
+  for(let col=0;col<n;col++){
+    let piv=col, best=cabs(M[col][col]);
+    for(let r=col+1;r<n;r++){const v=cabs(M[r][col]); if(v>best){best=v;piv=r;}}
+    if(best<1e-12) M[piv][col]=cadd(M[piv][col],[1e-9,0]);
+    if(piv!==col){const t=M[piv];M[piv]=M[col];M[col]=t;}
+    const dv=M[col][col];
+    for(let j=0;j<2*n;j++) M[col][j]=cdiv(M[col][j],dv);
+    for(let r=0;r<n;r++){ if(r===col) continue;
+      const f=M[r][col]; if(f[0]===0&&f[1]===0) continue;
+      for(let j=0;j<2*n;j++) M[r][j]=csub(M[r][j],cmul(f,M[col][j]));
+    }
+  }
+  const inv=[];
+  for(let i=0;i<n;i++){inv[i]=[]; for(let j=0;j<n;j++) inv[i][j]=M[i][n+j];}
+  return inv;
+}
+const matvec=(A,x)=>A.map(row=>row.reduce((s,aij,j)=>cadd(s,cmul(aij,x[j])),[0,0]));
+const innerH=(a,b)=>a.reduce((s,am,m)=>cadd(s,cmul(cconj(am),b[m])),[0,0]); // aᴴb
+
+// ---------------- language (EN / JA) ----------------
+let LANG='en';
+const T=(en,ja)=>LANG==='ja'?ja:en;
+
+// ---------------- model ----------------
+const C=343, TAU=2*Math.PI, deg=d=>d*Math.PI/180;
+function steer(M,f,d,thetaDeg){
+  const phi=(TAU*f*d/C)*Math.cos(deg(thetaDeg));   // inter-element phase
+  const a=[]; for(let m=0;m<M;m++) a.push([Math.cos(m*phi),Math.sin(m*phi)]);
+  return a;
+}
+
+// ---------------- DOM ----------------
+const el=id=>document.getElementById(id);
+const inputs=['M','d','f','look','i1on','i1a','i1p','i2on','i2a','i2p','n','showCbf','showMvdr'];
+
+// ---------------- charts ----------------
+Chart.defaults.color='#94a3b8'; Chart.defaults.font.size=11;
+let markers=[]; // {deg,color} for cartesian vertical lines
+const markerPlugin={ id:'mk', afterDraw(c){
+  const {ctx,chartArea:{top,bottom},scales:{x}}=c;
+  markers.forEach(m=>{ const px=x.getPixelForValue(m.deg); if(px<x.left||px>x.right)return;
+    ctx.save(); ctx.strokeStyle=m.color; ctx.setLineDash([4,3]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(px,top); ctx.lineTo(px,bottom); ctx.stroke(); ctx.restore(); });
+}};
+
+const cart=new Chart(el('cartesian'),{type:'line',
+  data:{datasets:[
+    {label:'Conventional',data:[],borderColor:'#94a3b8',borderWidth:2,pointRadius:0,tension:.1},
+    {label:'MVDR',data:[],borderColor:'#818cf8',backgroundColor:'rgba(129,140,248,.10)',borderWidth:2,pointRadius:0,fill:true,tension:.1}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,
+    scales:{x:{type:'linear',min:0,max:180,title:{display:true,text:'Angle (°)'},ticks:{stepSize:30},grid:{color:'#1f2937'}},
+            y:{min:-50,max:3,title:{display:true,text:'Response (dB)'},grid:{color:'#1f2937'}}},
+    plugins:{legend:{display:true,position:'top',labels:{boxWidth:14}}}},
+  plugins:[markerPlugin]});
+
+// ---------------- polar ----------------
+const pc=el('polar'), px=pc.getContext('2d');
+const FLOOR=-50;
+const frac=db=>Math.min(1,Math.max(0,(db-FLOOR)/(0-FLOOR)));
+function drawPolar(cbf,mvdr,lookDeg,intf,showCbf,showMvdr){
+  const dpr=window.devicePixelRatio||1, W=pc.clientWidth,H=pc.clientHeight;
+  pc.width=W*dpr; pc.height=H*dpr; px.setTransform(dpr,0,0,dpr,0,0); px.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2, R=Math.min(W,H)/2-24;
+  // rings
+  px.strokeStyle='#1f2937'; px.fillStyle='#475569'; px.font='10px monospace'; px.textAlign='left'; px.textBaseline='middle';
+  for(let db=0;db>=FLOOR;db-=10){const r=frac(db)*R; px.beginPath(); px.arc(cx,cy,r,0,TAU); px.stroke(); if(db>FLOOR&&db<0) px.fillText(db+'',cx+3,cy-r);}
+  px.textAlign='center';
+  for(let ang=0;ang<360;ang+=30){const t=deg(ang); px.strokeStyle='#1f2937';
+    px.beginPath(); px.moveTo(cx,cy); px.lineTo(cx+R*Math.cos(t),cy-R*Math.sin(t)); px.stroke();
+    px.fillStyle='#64748b'; px.fillText(ang+'°',cx+(R+13)*Math.cos(t),cy-(R+13)*Math.sin(t));}
+  // interferer markers (and mirror)
+  intf.forEach(a=>{[a,360-a].forEach(ang=>{const t=deg(ang);
+    px.strokeStyle='rgba(248,113,113,.8)'; px.setLineDash([3,3]); px.lineWidth=1.5;
+    px.beginPath(); px.moveTo(cx,cy); px.lineTo(cx+R*Math.cos(t),cy-R*Math.sin(t)); px.stroke(); px.setLineDash([]);});});
+  // look direction (and mirror)
+  [lookDeg,360-lookDeg].forEach(ang=>{const t=deg(ang);
+    px.strokeStyle='#34d399'; px.lineWidth=2; px.beginPath(); px.moveTo(cx,cy); px.lineTo(cx+R*Math.cos(t),cy-R*Math.sin(t)); px.stroke();});
+  const plot=(patt,stroke,fill)=>{ px.beginPath();
+    for(let a=0;a<=360;a++){const db=patt[a%360]; const r=frac(db)*R; const t=deg(a);
+      const x=cx+r*Math.cos(t), y=cy-r*Math.sin(t); a===0?px.moveTo(x,y):px.lineTo(x,y);}
+    if(fill){px.fillStyle=fill; px.fill();} px.strokeStyle=stroke; px.lineWidth=2; px.stroke(); };
+  if(showCbf)  plot(cbf,'#94a3b8',null);
+  if(showMvdr) plot(mvdr,'#818cf8','rgba(129,140,248,.18)');
+}
+
+// ---------------- render ----------------
+function render(){
+  const M=+el('M').value, d=+el('d').value/100, f=+el('f').value, look=+el('look').value;
+  const noise=Math.pow(10,(+el('n').value)/10);
+  // readouts
+  el('v_M').textContent=M; el('v_d').textContent=(d*100).toFixed(1);
+  el('v_dl').textContent=(d/(C/f)).toFixed(2); el('v_f').textContent=f;
+  el('v_look').textContent=look;
+  el('v_i1a').textContent=el('i1a').value; el('v_i1p').textContent=el('i1p').value;
+  el('v_i2a').textContent=el('i2a').value; el('v_i2p').textContent=el('i2p').value;
+  el('v_n').textContent=el('n').value;
+
+  // interferers
+  const intf=[];
+  if(el('i1on').checked) intf.push({ang:+el('i1a').value, p:Math.pow(10,(+el('i1p').value)/10)});
+  if(el('i2on').checked) intf.push({ang:+el('i2a').value, p:Math.pow(10,(+el('i2p').value)/10)});
+
+  // steering for look
+  const a0=steer(M,f,d,look);
+
+  // covariance R = noise*I + Σ p a aᴴ
+  const R=Array.from({length:M},(_,i)=>Array.from({length:M},(_,j)=>[(i===j?noise:0),0]));
+  intf.forEach(it=>{ const a=steer(M,f,d,it.ang);
+    for(let m=0;m<M;m++) for(let nn=0;nn<M;nn++)
+      R[m][nn]=cadd(R[m][nn], cmul([it.p,0], cmul(a[m],cconj(a[nn])))); });
+
+  // MVDR weights
+  const Rinv=cinv(R);
+  const u=matvec(Rinv,a0);
+  const den=innerH(a0,u);                 // real, positive
+  const wM=u.map(v=>cdiv(v,den));
+  // Conventional weights
+  const wC=a0.map(v=>[v[0]/M,v[1]/M]);
+
+  // patterns (dB) over 0..359
+  const cbf=new Array(360), mvdr=new Array(360);
+  for(let ang=0;ang<360;ang++){ const a=steer(M,f,d,ang);
+    cbf[ang]=20*Math.log10(Math.max(cabs(innerH(wC,a)),1e-9));
+    mvdr[ang]=20*Math.log10(Math.max(cabs(innerH(wM,a)),1e-9)); }
+
+  // cartesian 0..180
+  const cD=[],mD=[];
+  for(let ang=0;ang<=180;ang++){cD.push({x:ang,y:Math.max(-50,cbf[ang])}); mD.push({x:ang,y:Math.max(-50,mvdr[ang])});}
+  cart.data.datasets[0].data=cD; cart.data.datasets[0].hidden=!el('showCbf').checked;
+  cart.data.datasets[1].data=mD; cart.data.datasets[1].hidden=!el('showMvdr').checked;
+  cart.data.datasets[0].label=T('Conventional','従来型');
+  cart.data.datasets[1].label=T('MVDR','MVDR');
+  cart.options.scales.x.title.text=T('Angle (°)','角度 (°)');
+  cart.options.scales.y.title.text=T('Response (dB)','応答 (dB)');
+  markers=[{deg:look,color:'#34d399'}, ...intf.map(it=>({deg:it.ang,color:'#f87171'}))];
+  cart.update();
+
+  drawPolar(cbf,mvdr,look,intf.map(i=>i.ang),el('showCbf').checked,el('showMvdr').checked);
+
+  // metrics
+  const wngC=10*Math.log10(1/wC.reduce((s,w)=>s+w[0]*w[0]+w[1]*w[1],0));
+  const wngM=10*Math.log10(1/wM.reduce((s,w)=>s+w[0]*w[0]+w[1]*w[1],0));
+  const rows=[[T('White-noise gain (WNG)','白色雑音利得 (WNG)'), wngC.toFixed(1)+' dB', wngM.toFixed(1)+' dB', T('Robustness to sensor noise (higher = better)','センサ雑音への頑健性（高いほど良い）')]];
+  intf.forEach((it,k)=>{ rows.push([T(`Atten. @ interferer ${k+1} (${it.ang}°)`,`干渉源${k+1} の減衰 (${it.ang}°)`),
+      cbf[it.ang].toFixed(1)+' dB', mvdr[it.ang].toFixed(1)+' dB', T('Rejection of that interferer (lower = deeper null)','その干渉源の抑圧（低いほど深いヌル）')]); });
+  el('metricBody').innerHTML=rows.map(r=>`<tr class="border-b border-slate-800">
+      <td class="py-1 pr-4 text-slate-400 font-sans">${r[0]}</td>
+      <td class="py-1 pr-4 text-slate-300">${r[1]}</td>
+      <td class="py-1 pr-4 text-indigo-300">${r[2]}</td>
+      <td class="py-1 text-slate-500 font-sans text-xs">${r[3]}</td></tr>`).join('');
+
+  // dynamic insight
+  let msg;
+  const maxINR=intf.reduce((m,i)=>Math.max(m,i.p),0);
+  if(intf.length===0){ msg=T('No interferers present → MVDR has nothing to null, so it matches the conventional beamformer.','干渉源がないため、MVDR はヌルを形成する対象がなく、従来型ビームフォーマと一致します。'); }
+  else if(maxINR < noise*2){ msg=T('Loading/noise dominates the interference → R ≈ σ²I, so MVDR is collapsing toward the conventional pattern (robust but no deep nulls).','ローディング/雑音が干渉を上回る → R ≈ σ²I のため、MVDR は従来型パターンに近づいています（頑健だが深いヌルなし）。'); }
+  else { const best=intf.map((it,k)=>(cbf[it.ang]-mvdr[it.ang])).reduce((a,b)=>Math.max(a,b),0);
+    msg=T(`MVDR is placing adaptive nulls — up to ${best.toFixed(0)} dB deeper rejection on the interferer(s) than the conventional beamformer, while keeping 0 dB on the target.`,`MVDR は適応的にヌルを形成中 — ターゲットに 0 dB を保ちつつ、干渉源を従来型より最大 ${best.toFixed(0)} dB 深く抑圧しています。`); }
+  el('insight').textContent=msg;
+}
+
+// ---------------- wiring ----------------
+inputs.forEach(id=>el(id).addEventListener('input',render));
+const PRESETS={
+  jammer:{M:6,d:8,f:2000,look:90,i1on:1,i1a:55,i1p:25,i2on:0,i2a:125,i2p:25,n:0},
+  two:   {M:8,d:8,f:2000,look:90,i1on:1,i1a:50,i1p:28,i2on:1,i2a:130,i2p:28,n:0},
+  white: {M:6,d:8,f:2000,look:70,i1on:1,i1a:55,i1p:10,i2on:0,i2a:125,i2p:25,n:35}
+};
+document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>{
+  const p=PRESETS[b.dataset.preset];
+  el('M').value=p.M; el('d').value=p.d; el('f').value=p.f; el('look').value=p.look;
+  el('i1on').checked=!!p.i1on; el('i1a').value=p.i1a; el('i1p').value=p.i1p;
+  el('i2on').checked=!!p.i2on; el('i2a').value=p.i2a; el('i2p').value=p.i2p;
+  el('n').value=p.n; render();
+}));
+window.addEventListener('resize',render);
+
+// ---------------- language switching ----------------
+const enBtn=el('enBtn'), jaBtn=el('jaBtn');
+function applyLang(){
+  document.querySelectorAll('[data-en]').forEach(e=>{ e.textContent = LANG==='ja' ? (e.dataset.ja||e.dataset.en) : e.dataset.en; });
+}
+function setLang(l){
+  LANG=l;
+  document.body.classList.toggle('lang-en', l==='en');
+  document.body.classList.toggle('lang-ja', l==='ja');
+  document.documentElement.lang=l;
+  [[enBtn,l==='en'],[jaBtn,l==='ja']].forEach(([b,act])=>{
+    b.classList.toggle('bg-indigo-600',act); b.classList.toggle('text-white',act);
+    b.classList.toggle('bg-slate-800',!act); b.classList.toggle('text-slate-300',!act);
+  });
+  try{ localStorage.setItem('mvdr-lang', l); }catch(e){}
+  applyLang(); render();
+}
+enBtn.addEventListener('click',()=>setLang('en'));
+jaBtn.addEventListener('click',()=>setLang('ja'));
+let initialLang='en';
+try{ const s=localStorage.getItem('mvdr-lang'); initialLang = s || ((navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en'); }catch(e){}
+setLang(initialLang);
+</script>
+</body>
+</html>

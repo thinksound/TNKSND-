@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Tooling Playbook — E7 SWE (Product · Technical Leadership)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{ background:#0b1020; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  .pill{ display:inline-block; font-size:11px; font-weight:600; border-radius:999px; padding:1px 9px; }
+  .field{ background:#0d1117; border:1px solid #1f2937; color:#e2e8f0; border-radius:8px; }
+  .field:focus{ outline:none; border-color:#6366f1; }
+  a.lnk{ color:#818cf8; } a.lnk:hover{ color:#a5b4fc; text-decoration:underline; }
+  details>summary{ cursor:pointer; list-style:none; } details>summary::-webkit-details-marker{ display:none; }
+  .dot{ width:11px; height:11px; border-radius:999px; display:inline-block; flex:0 0 auto; }
+  input[type=range]{ accent-color:#6366f1; }
+  body.lang-en [lang=ja]{display:none}
+  body.lang-ja [lang=en]{display:none}
+</style>
+</head>
+<body class="text-slate-200 min-h-screen lang-en">
+<div class="max-w-[1080px] mx-auto px-4 py-7">
+
+  <header class="mb-5">
+    <div class="flex items-start justify-between gap-3">
+      <h1 class="text-3xl font-bold text-white">🤖 AI-Tooling Playbook</h1>
+      <div class="flex rounded-md overflow-hidden border border-slate-700 text-xs"><button id="enBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">EN</button><button id="jaBtn" class="px-2 py-1.5 bg-slate-800 text-slate-300">日本語</button></div>
+    </div>
+    <p class="text-slate-400 mt-1" lang="en">Turn your agent-orchestration practice into interview-ready material for the E7 “Software Engineer, Product (Technical Leadership)” JD: <i>integrate AI tools to optimize workflows and drive measurable impact, apply responsible/ethical AI, and keep your AI skills sharp.</i></p>
+    <p class="text-slate-400 mt-1" lang="ja">あなたのエージェント・オーケストレーションの実践を、E7「Software Engineer, Product (Technical Leadership)」職務記述書（JD）に向けた面接対応の素材へと変換します。すなわち、<i>AI ツールを統合してワークフローを最適化し、測定可能なインパクトを生み出す。責任ある／倫理的な AI を実践する。そして自身の AI スキルを磨き続ける。</i></p>
+  </header>
+
+  <!-- how to use -->
+  <div class="card rounded-xl p-5 mb-6 border-emerald-500/40">
+    <h2 class="text-lg font-semibold text-emerald-300 mb-2" lang="en">📅 How to use this on Day 10 of the plan</h2>
+    <h2 class="text-lg font-semibold text-emerald-300 mb-2" lang="ja">📅 プラン10日目での使い方</h2>
+    <p class="text-slate-300 text-sm leading-relaxed" lang="en">Day 10 is your AI-tooling block. Spend ~20 minutes in <b>Concept Cards</b> to lock the vocabulary (prompt vs context engineering, agent orchestration, evals, responsible AI) and memorize one <b>interview soundbite</b> per concept. Then open the <b>Impact Story Builder</b> and write 2–3 real stories from your own agent-orchestration work, each framed as <i>before → AI intervention → measurable impact → responsible-AI consideration</i> — this maps one-to-one to the JD bullet. Run the <b>Self-Assessment</b> to find your weakest competencies and decide what to practice before the loop. Finally, use the <b>2-Minute Spiel Composer</b> to assemble your strongest story plus your top competencies into a script you can deliver out loud and copy for review. Everything saves locally so you can iterate across sessions.</p>
+    <p class="text-slate-300 text-sm leading-relaxed" lang="ja">10日目は AI ツーリングのための時間です。まず <b>Concept Cards</b> に約20分かけて用語（prompt と context engineering の違い、agent orchestration、evals、responsible AI）を固め、各コンセプトにつき1つの<b>面接用ひとこと（soundbite）</b>を暗記します。次に <b>Impact Story Builder</b> を開き、自身のエージェント・オーケストレーションの仕事から実際のストーリーを2〜3件書きます。各ストーリーは<i>導入前 → AI による介入 → 測定可能なインパクト → 責任ある AI の配慮</i>という形で組み立てます。これは JD の箇条書きと一対一で対応します。<b>Self-Assessment</b> を実施して最も弱いコンピテンシーを見つけ、面接ループ前に何を練習するか決めましょう。最後に <b>2-Minute Spiel Composer</b> を使い、最も強いストーリーと上位のコンピテンシーを組み合わせて、声に出して話せて見直し用にコピーできる台本を作成します。すべてローカルに保存されるため、セッションをまたいで反復できます。</p>
+  </div>
+
+  <!-- nav -->
+  <div class="flex flex-wrap gap-2 mb-6 text-sm">
+    <a class="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300" href="#concepts"><span lang="en">① Concept cards</span><span lang="ja">① コンセプトカード</span></a>
+    <a class="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300" href="#stories"><span lang="en">② Impact stories</span><span lang="ja">② インパクト・ストーリー</span></a>
+    <a class="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300" href="#assess"><span lang="en">③ Self-assessment</span><span lang="ja">③ 自己評価</span></a>
+    <a class="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300" href="#spiel"><span lang="en">④ 2-minute spiel</span><span lang="ja">④ 2分間スピーチ</span></a>
+  </div>
+
+  <!-- ① CONCEPT CARDS -->
+  <div id="concepts" class="card rounded-xl p-5 mb-6">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="text-lg font-semibold text-white"><span lang="en">① Concept cards</span><span lang="ja">① コンセプトカード</span></h2>
+      <div class="text-sm text-slate-400"><span id="conceptCount">0</span><span lang="en"> concepts · click a card to expand</span><span lang="ja"> 個のコンセプト・カードをクリックで展開</span></div>
+    </div>
+    <p class="text-slate-400 text-sm mb-4" lang="en">The AI-tooling vocabulary an E7 is expected to wield. Each card has a definition, why it matters at E7, a concrete example, and an <span class="text-emerald-400">interview soundbite</span> you can say verbatim.</p>
+    <p class="text-slate-400 text-sm mb-4" lang="ja">E7 が使いこなせて当然とされる AI ツーリングの語彙です。各カードには定義、E7 でなぜ重要か、具体例、そしてそのまま口に出せる<span class="text-emerald-400">面接用ひとこと（soundbite）</span>が含まれます。</p>
+    <div id="conceptGrid" class="grid md:grid-cols-2 gap-3"></div>
+  </div>
+
+  <!-- ② IMPACT STORY BUILDER -->
+  <div id="stories" class="grid lg:grid-cols-2 gap-6 mb-6">
+    <!-- editor -->
+    <div class="card rounded-xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold text-white"><span lang="en">② AI-impact story builder</span><span lang="ja">② AI インパクト・ストーリー作成</span></h2>
+        <span id="editStatus" class="text-xs text-slate-500"></span>
+      </div>
+      <p class="text-slate-400 text-sm mb-3" lang="en">Structure your real AI-tooling wins to the JD: <i>before → AI intervention → measurable impact → responsible AI</i>.</p>
+      <p class="text-slate-400 text-sm mb-3" lang="ja">あなたの実際の AI ツーリングの成果を JD に合わせて構成します。<i>導入前 → AI による介入 → 測定可能なインパクト → 責任ある AI</i>。</p>
+
+      <label class="block text-xs text-slate-400 mb-1" lang="en">Title</label>
+      <label class="block text-xs text-slate-400 mb-1" lang="ja">タイトル</label>
+      <input id="f_title" class="field w-full px-3 py-2 mb-3 text-sm" data-ph-en="e.g. Agent-orchestrated content pipeline" data-ph-ja="例：エージェントでオーケストレーションしたコンテンツ・パイプライン">
+
+      <label class="block text-xs text-slate-400 mb-1" lang="en">Workflow <b>before</b> AI</label>
+      <label class="block text-xs text-slate-400 mb-1" lang="ja">AI 導入<b>前</b>のワークフロー</label>
+      <textarea id="f_before" rows="2" class="field w-full px-3 py-2 mb-3 text-sm" data-ph-en="What was the manual / slow / error-prone process?" data-ph-ja="手作業で／遅く／ミスの起きやすかったプロセスは何でしたか？"></textarea>
+
+      <label class="block text-xs text-slate-400 mb-1" lang="en">AI intervention <span class="text-slate-500">(which technique)</span></label>
+      <label class="block text-xs text-slate-400 mb-1" lang="ja">AI による介入 <span class="text-slate-500">（どの手法か）</span></label>
+      <textarea id="f_intervention" rows="2" class="field w-full px-3 py-2 mb-2 text-sm" data-ph-en="What did you build / change with AI?" data-ph-ja="AI を使って何を構築／変更しましたか？"></textarea>
+      <select id="f_technique" class="field w-full px-3 py-2 mb-3 text-sm"></select>
+
+      <label class="block text-xs text-slate-400 mb-1" lang="en">Measurable impact <span class="text-emerald-400">(with a metric!)</span></label>
+      <label class="block text-xs text-slate-400 mb-1" lang="ja">測定可能なインパクト <span class="text-emerald-400">（必ず指標を！）</span></label>
+      <textarea id="f_impact" rows="2" class="field w-full px-3 py-2 mb-3 text-sm" data-ph-en="e.g. cut authoring time ~70%, +30% throughput, defects -40%" data-ph-ja="例：制作時間を約70%削減、スループット+30%、欠陥-40%"></textarea>
+
+      <label class="block text-xs text-slate-400 mb-1" lang="en">Responsible-AI consideration</label>
+      <label class="block text-xs text-slate-400 mb-1" lang="ja">責任ある AI への配慮</label>
+      <textarea id="f_responsible" rows="2" class="field w-full px-3 py-2 mb-4 text-sm" data-ph-en="Risk assessment, bias check, accuracy/quality review, human-in-the-loop…" data-ph-ja="リスク評価、バイアスチェック、精度／品質レビュー、human-in-the-loop など…"></textarea>
+
+      <div class="flex gap-2 flex-wrap">
+        <button id="saveBtn" class="text-sm px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"></button>
+        <button id="newBtn" class="text-sm px-4 py-2 rounded-md bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300"><span lang="en">Clear / new</span><span lang="ja">クリア／新規</span></button>
+      </div>
+    </div>
+
+    <!-- list -->
+    <div class="card rounded-xl p-5">
+      <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 class="text-lg font-semibold text-white"><span lang="en">📚 Saved stories</span><span lang="ja">📚 保存済みストーリー</span> (<span id="storyCount">0</span>)</h2>
+        <button id="seedBtn" class="text-xs px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300"><span lang="en">Load example</span><span lang="ja">例を読み込む</span></button>
+      </div>
+      <div id="stStories" class="space-y-3"></div>
+      <p id="stEmpty" class="text-slate-500 text-sm" lang="en">No stories yet. Build one on the left, or click <b>Load example</b> to start from a seeded story based on your agent-orchestration work.</p>
+      <p id="stEmptyJa" class="text-slate-500 text-sm" lang="ja">まだストーリーがありません。左側で作成するか、<b>例を読み込む</b>をクリックして、あなたのエージェント・オーケストレーションの仕事に基づくサンプル・ストーリーから始めましょう。</p>
+    </div>
+  </div>
+
+  <!-- ③ SELF-ASSESSMENT -->
+  <div id="assess" class="card rounded-xl p-5 mb-6">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="text-lg font-semibold text-white"><span lang="en">③ AI-competency self-assessment</span><span lang="ja">③ AI コンピテンシー自己評価</span></h2>
+      <button id="resetAssess" class="text-xs px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 hover:border-rose-400 text-slate-300"><span lang="en">Reset ratings</span><span lang="ja">評価をリセット</span></button>
+    </div>
+    <p class="text-slate-400 text-sm mb-4" lang="en">Rate yourself 1 (new to it) → 5 (could teach it) on each competency. The bar shows interview readiness; anything ≤2 is flagged as a gap to close before the loop.</p>
+    <p class="text-slate-400 text-sm mb-4" lang="ja">各コンピテンシーについて、1（初めて）→ 5（人に教えられる）で自己評価します。バーは面接への準備度を示します。2以下のものは、面接ループ前に埋めるべきギャップとしてフラグが立ちます。</p>
+    <div id="assessRows" class="space-y-3 mb-5"></div>
+
+    <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-4">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm font-semibold text-white"><span lang="en">Readiness</span><span lang="ja">準備度</span></span>
+        <span id="readPct" class="text-sm font-semibold text-indigo-300">0%</span>
+      </div>
+      <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden mb-2">
+        <div id="readBar" class="h-3 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400" style="width:0%"></div>
+      </div>
+      <p id="readMsg" class="text-xs text-slate-400"></p>
+      <div id="gaps" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- ④ SPIEL COMPOSER -->
+  <div id="spiel" class="card rounded-xl p-5 mb-10">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="text-lg font-semibold text-white"><span lang="en">④ 2-minute spiel composer</span><span lang="ja">④ 2分間スピーチ作成</span></h2>
+      <div class="flex gap-2">
+        <button id="genSpiel" class="text-xs px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"><span lang="en">Generate / refresh</span><span lang="ja">生成／更新</span></button>
+        <button id="copySpiel" class="text-xs px-3 py-1.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white"><span lang="en">Copy to clipboard</span><span lang="ja">クリップボードにコピー</span></button>
+      </div>
+    </div>
+    <p class="text-slate-400 text-sm mb-3" lang="en">Assembles your strongest saved story plus your top-rated competencies into a ~250-word spoken script for the “How do you use AI tools?” question. Pick the lead story, then generate.</p>
+    <p class="text-slate-400 text-sm mb-3" lang="ja">最も強い保存済みストーリーと、最高評価のコンピテンシーを組み合わせて、「AI ツールをどう使っていますか？」という質問に答える約250語（日本語では約600字）の話し言葉の台本を作成します。リード・ストーリーを選んでから生成してください。</p>
+    <div class="flex items-center gap-2 mb-3 flex-wrap">
+      <label class="text-xs text-slate-400"><span lang="en">Lead story:</span><span lang="ja">リード・ストーリー：</span></label>
+      <select id="spielStory" class="field px-3 py-1.5 text-sm"></select>
+      <span id="spielMsg" class="text-xs text-emerald-400"></span>
+    </div>
+    <textarea id="spielOut" rows="12" class="field w-full px-3 py-3 text-sm leading-relaxed" data-ph-en="Click “Generate / refresh” to assemble your spiel…" data-ph-ja="「生成／更新」をクリックしてスピーチを組み立てます…"></textarea>
+    <p class="text-xs text-slate-500 mt-2"><span lang="en">Word count: <span id="wordCount">0</span> · aim for ~250 (≈2 min spoken). Edit freely; copy uses whatever is in the box.</span><span lang="ja">語数：<span id="wordCountJa">0</span> · 約250語（≈2分の発話）を目安に。自由に編集できます。コピーはボックス内のテキストをそのまま使用します。</span></p>
+  </div>
+
+  <footer class="text-center text-xs text-slate-600"><span lang="en">AI-Tooling Playbook · tuned to the Meta E7 “SWE, Product (Technical Leadership)” JD · saves locally in your browser</span><span lang="ja">AI-Tooling Playbook · Meta E7「SWE, Product (Technical Leadership)」JD に合わせて調整 · データはブラウザ内にローカル保存されます</span></footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function uid(){ return 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ---------------- i18n ----------------
+let LANG='en';
+const T=(en,ja)=>LANG==='ja'?ja:en;
+
+// ---------------- ① CONCEPT CARDS ----------------
+const CONCEPTS=[
+ {id:'prompt', name:'Prompt engineering',
+  name_ja:'Prompt engineering（プロンプト設計）',
+  def:'Crafting instructions, examples, roles, and output formats so a model reliably produces what you need.',
+  def_ja:'指示・例・役割・出力フォーマットを設計し、モデルが必要なものを安定して生成できるようにすること。',
+  e7:'At E7 it is table stakes — but the signal is that you treat prompts as versioned, tested artifacts, not one-off magic strings.',
+  e7_ja:'E7 では当然の前提だが、評価されるのはプロンプトを場当たり的な「魔法の文字列」ではなく、バージョン管理されテストされた成果物として扱う姿勢。',
+  ex:'Replaced a vague “summarize this” with a role + few-shot + JSON-schema prompt, cutting reformatting toil to zero.',
+  ex_ja:'曖昧な「これを要約して」を、役割＋few-shot＋JSON スキーマ指定のプロンプトに置き換え、再整形の手間をゼロにした。',
+  bite:'I treat prompts like code: versioned, with few-shot examples and a strict output contract, then I measure their hit rate rather than eyeballing.',
+  bite_ja:'プロンプトはコードのように扱います。バージョン管理し、few-shot の例と厳密な出力契約を付け、目視ではなく的中率で測定します。'},
+ {id:'context', name:'Context engineering (RAG, windows, memory)',
+  name_ja:'Context engineering（RAG・コンテキスト窓・メモリ）',
+  def:'Deciding what information reaches the model: retrieval/RAG, context-window budgeting, and persistent memory across turns.',
+  def_ja:'どの情報をモデルに届けるかを決めること。検索／RAG、コンテキスト窓の配分、ターンをまたぐ永続メモリなど。',
+  e7:'The leverage at scale is in the context, not the prompt — knowing what to retrieve and what to leave out is the real skill.',
+  e7_ja:'スケール時のレバレッジはプロンプトではなくコンテキストにある。何を取得し何を外すかを見極めることこそが本当のスキル。',
+  ex:'Added retrieval over our design docs so the agent cited real internal specs instead of hallucinating APIs.',
+  ex_ja:'設計ドキュメントへの検索（retrieval）を追加し、エージェントが API を幻覚（hallucination）するのではなく、実在する社内仕様を引用するようにした。',
+  bite:'Most quality problems I see are context problems, not prompt problems — I invest in retrieval, context budgeting, and memory before tweaking wording.',
+  bite_ja:'私が見る品質問題の多くはプロンプトではなくコンテキストの問題です。言い回しをいじる前に、retrieval・コンテキスト配分・メモリに投資します。'},
+ {id:'tools', name:'Tool / function calling',
+  name_ja:'Tool / function calling（ツール・関数呼び出し）',
+  def:'Letting a model invoke typed functions or tools (search, code-run, APIs) and act on the structured results.',
+  def_ja:'モデルに型付きの関数やツール（検索、コード実行、API）を呼び出させ、その構造化された結果に基づいて動作させること。',
+  e7:'It is the bridge from chat to real workflows; an E7 designs the tool surface and its guardrails, not just the prompt.',
+  e7_ja:'チャットから実際のワークフローへの橋渡し。E7 はプロンプトだけでなく、ツールの設計面（surface）とそのガードレールまで設計する。',
+  ex:'Gave the agent a “run tests” and “read file” tool so it could close the loop on its own edits.',
+  ex_ja:'エージェントに「テスト実行」と「ファイル読み取り」のツールを与え、自身の編集をループとして完結できるようにした。',
+  bite:'I design the tool surface deliberately — narrow, typed, idempotent tools with validation — because that is where reliability and safety actually live.',
+  bite_ja:'ツールの設計面は意図的に作り込みます。狭く、型付きで、冪等（idempotent）、かつ検証付きのツールにします。信頼性と安全性が実際に宿るのはそこだからです。'},
+ {id:'orchestration', name:'Agent orchestration',
+  name_ja:'Agent orchestration（エージェント・オーケストレーション）',
+  def:'Coordinating one or more agents: single vs multi-agent, planner-worker splits, critic/verification loops, and fan-out parallelism.',
+  def_ja:'1つ以上のエージェントを協調させること。単一 vs マルチエージェント、planner-worker の分割、critic／検証ループ、fan-out による並列化など。',
+  e7:'This is the headline AI-leverage skill — composing agents into a reliable workflow is systems design, which is your E7 wheelhouse.',
+  e7_ja:'これは AI レバレッジの目玉スキル。エージェントを信頼できるワークフローへ組み上げることはシステム設計であり、まさに E7 の得意領域。',
+  ex:'Used a planner agent to decompose work, fanned out workers in parallel, then a critic agent reviewed before merge.',
+  ex_ja:'planner エージェントで作業を分解し、worker を並列に fan-out させ、マージ前に critic エージェントがレビューした。',
+  bite:'I orchestrate agents like a team: a planner decomposes, workers fan out in parallel, and a critic verifies — the verification loop is what makes it trustworthy.',
+  bite_ja:'エージェントはチームのようにオーケストレーションします。planner が分解し、worker が並列に fan-out し、critic が検証する。この検証ループこそが信頼性を生みます。'},
+ {id:'evals', name:'Evals & measurement',
+  name_ja:'Evals & measurement（評価と測定）',
+  def:'Systematically measuring AI output quality with test sets, rubrics, and automated or LLM-as-judge scoring.',
+  def_ja:'テストセット、ルーブリック、自動採点または LLM-as-judge による採点を用いて、AI 出力の品質を体系的に測定すること。',
+  e7:'Without evals you are guessing; an E7 makes AI work measurable and defensible the same way they do for any system.',
+  e7_ja:'evals がなければ当て推量にすぎない。E7 は他のあらゆるシステムと同様に、AI の成果を測定可能で説明可能なものにする。',
+  ex:'Built a 50-case eval set so every prompt change was scored before shipping, not vibe-checked.',
+  ex_ja:'50ケースの eval セットを構築し、すべてのプロンプト変更を「雰囲気」ではなく出荷前にスコアリングした。',
+  bite:'I do not ship AI changes on vibes — I stand up an eval set with a rubric so every change has a regression number I can defend.',
+  bite_ja:'AI の変更を「雰囲気」で出荷することはありません。ルーブリック付きの eval セットを用意し、すべての変更に説明できる回帰（regression）の数値を持たせます。'},
+ {id:'guardrails', name:'Guardrails & responsible AI',
+  name_ja:'Guardrails & responsible AI（ガードレールと責任ある AI）',
+  def:'Risk assessment, bias mitigation, quality/accuracy reviews, and human-in-the-loop checkpoints around AI systems.',
+  def_ja:'AI システムの周囲に設けるリスク評価、バイアス軽減、品質／精度レビュー、human-in-the-loop のチェックポイント。',
+  e7:'Responsible AI is called out explicitly in the JD; E7s are expected to own the risk story, not delegate it.',
+  e7_ja:'責任ある AI は JD で明示的に挙げられている。E7 はリスクの説明責任を他者に委ねず、自ら担うことが期待される。',
+  ex:'Added a human-approval gate for any agent action that writes to production plus a bias review of generated copy.',
+  ex_ja:'本番環境へ書き込むエージェントの操作すべてに人間承認のゲートを追加し、生成コピーのバイアス・レビューも加えた。',
+  bite:'For anything customer-facing I do a quick risk assessment, add human-in-the-loop on irreversible actions, and review outputs for bias and accuracy before trusting them.',
+  bite_ja:'顧客に触れるものには必ず手早くリスク評価を行い、不可逆な操作には human-in-the-loop を入れ、信頼する前に出力のバイアスと精度をレビューします。'},
+ {id:'redesign', name:'Workflow redesign with AI',
+  name_ja:'Workflow redesign with AI（AI によるワークフロー再設計）',
+  def:'Re-architecting a process around AI capabilities rather than bolting AI onto the existing steps.',
+  def_ja:'既存の工程に AI を後付けするのではなく、AI の能力を中心にプロセスを再設計すること。',
+  e7:'The JD asks to “optimize and redesign workflows” — the multiplier comes from rethinking the workflow, not automating one task.',
+  e7_ja:'JD は「ワークフローの最適化と再設計」を求めている。倍率を生むのは1つのタスクの自動化ではなく、ワークフロー自体の再考。',
+  ex:'Instead of speeding up manual translation, I redesigned authoring so content was generated bilingual from one source.',
+  ex_ja:'手作業の翻訳を速くするのではなく、1つのソースからバイリンガルでコンテンツが生成されるよう制作工程を再設計した。',
+  bite:'The real win is redesigning the workflow around what AI is good at — I look for the step to eliminate, not just the step to speed up.',
+  bite_ja:'本当の勝ちは、AI が得意なことを中心にワークフローを再設計することです。速くする工程ではなく、なくせる工程を探します。'},
+ {id:'impact', name:'Measuring impact',
+  name_ja:'Measuring impact（インパクトの測定）',
+  def:'Quantifying the effect of AI tooling on efficiency, quality, and throughput with concrete before/after metrics.',
+  def_ja:'AI ツーリングが効率・品質・スループットに与える効果を、具体的な導入前後の指標で定量化すること。',
+  e7:'“Drive measurable impact” is the whole bullet — a number turns an AI claim into evidence an E7 can defend.',
+  e7_ja:'「測定可能なインパクトを生み出す」が箇条書きの核心。数値は AI の主張を、E7 が擁護できる証拠へと変える。',
+  ex:'Tracked authoring time before/after: ~70% reduction, which justified rolling the workflow to the wider team.',
+  ex_ja:'制作時間を導入前後で計測：約70%削減。これがワークフローをより広いチームへ展開する根拠となった。',
+  bite:'I always instrument before and after — time saved, throughput, defect rate — so AI impact is a number on a slide, not a story.',
+  bite_ja:'必ず導入前後を計測します。短縮時間、スループット、欠陥率など。そうすれば AI のインパクトは物語ではなく、スライド上の数値になります。'},
+ {id:'humanloop', name:'Human-in-the-loop & review',
+  name_ja:'Human-in-the-loop & review（人間の介在とレビュー）',
+  def:'Keeping a human checkpoint where stakes, ambiguity, or irreversibility make full automation unsafe.',
+  def_ja:'リスクの高さ・曖昧さ・不可逆性のために完全自動化が安全でない箇所に、人間のチェックポイントを残すこと。',
+  e7:'Knowing when NOT to fully automate is senior judgment; E7s calibrate autonomy to risk.',
+  e7_ja:'いつ完全自動化「しない」かを見極めることはシニアの判断力。E7 は自律性をリスクに合わせて調整する。',
+  ex:'Agent drafts the migration, a senior engineer approves before it runs against the live database.',
+  ex_ja:'エージェントがマイグレーションを起草し、本番データベースに対して実行する前にシニアエンジニアが承認する。',
+  bite:'I calibrate autonomy to risk: let agents run free on reversible, low-stakes work, and insert a human gate exactly where a mistake would be expensive.',
+  bite_ja:'自律性はリスクに合わせて調整します。可逆で低リスクな作業はエージェントに自由に任せ、ミスが高くつくところには人間のゲートを正確に挿入します。'},
+ {id:'current', name:'Staying current',
+  name_ja:'Staying current（最新の維持）',
+  def:'A deliberate routine for tracking model releases, techniques, and tools, then trialing them on real work.',
+  def_ja:'モデルのリリース・手法・ツールを追い、それらを実際の仕事で試すための意図的なルーティン。',
+  e7:'“Ongoing AI skill development” is in the JD; E7s model continuous learning and bring it to their org.',
+  e7_ja:'「継続的な AI スキル開発」は JD にある。E7 は継続学習を体現し、それを組織に持ち込む。',
+  ex:'Run a monthly “new model bake-off” on a fixed eval set and share findings with the team.',
+  ex_ja:'固定した eval セットで毎月「新モデルの比較検証（bake-off）」を行い、知見をチームに共有する。',
+  bite:'I keep a fixed eval set and re-run it whenever a new model or technique lands, so my adoption decisions are evidence-based and I can bring that to the org.',
+  bite_ja:'固定した eval セットを持ち、新しいモデルや手法が出るたびに再実行します。だから採用の判断は証拠に基づき、それを組織にも持ち込めます。'},
+];
+
+const TECHNIQUES=CONCEPTS.map(c=>c.name);
+const TECHNIQUES_JA=CONCEPTS.map(c=>c.name_ja);
+const techLabel=(name)=>{ const i=TECHNIQUES.indexOf(name); return (LANG==='ja'&&i>=0)?TECHNIQUES_JA[i]:name; };
+
+function renderConcepts(){
+  $('conceptCount').textContent=CONCEPTS.length;
+  $('conceptGrid').innerHTML=CONCEPTS.map(c=>
+   `<details class="card rounded-lg p-4">
+      <summary class="flex items-center justify-between gap-2">
+        <span class="font-semibold text-indigo-300">${esc(T(c.name,c.name_ja))}</span>
+        <span class="text-xs text-slate-500">${T('expand ▾','展開 ▾')}</span>
+      </summary>
+      <div class="mt-3 text-sm space-y-2">
+        <p class="text-slate-300">${esc(T(c.def,c.def_ja))}</p>
+        <p><span class="pill bg-indigo-500/20 text-indigo-300">${T('Why at E7','E7 で重要な理由')}</span> <span class="text-slate-300">${esc(T(c.e7,c.e7_ja))}</span></p>
+        <p><span class="pill bg-slate-600/30 text-slate-300">${T('Example','例')}</span> <span class="text-slate-400 italic">${esc(T(c.ex,c.ex_ja))}</span></p>
+        <p class="rounded-md bg-emerald-500/10 border border-emerald-500/30 p-2">
+          <span class="pill bg-emerald-500/20 text-emerald-300">${T('Soundbite','ひとこと')}</span>
+          <span class="text-slate-200">“${esc(T(c.bite,c.bite_ja))}”</span>
+        </p>
+      </div>
+    </details>`).join('');
+}
+
+// ---------------- ② IMPACT STORY BUILDER ----------------
+const LS_STORIES='aitp_stories';
+const LS_SEEDED='aitp_seeded';
+let stories=loadStories();
+let editingId=null;
+
+function loadStories(){ try{ return JSON.parse(localStorage.getItem(LS_STORIES)||'[]'); }catch(e){ return []; } }
+function persistStories(){ try{ localStorage.setItem(LS_STORIES,JSON.stringify(stories)); }catch(e){} renderStories(); refreshSpielOptions(); }
+
+function seedStory(){
+  return {id:'aitp_ex1', example:true,
+   title:'Agent-orchestrated bilingual DSP teaching-tool pipeline',
+   title_ja:'エージェントでオーケストレーションしたバイリンガル DSP 教材パイプライン',
+   before:'Authoring interactive audio-DSP teaching tools was fully manual and English-only; each app took days, and the Japanese version was a separate hand-translation pass.',
+   before_ja:'インタラクティブな音声 DSP 教材の制作は完全に手作業かつ英語のみで、各アプリに数日かかり、日本語版は別途の手作業翻訳パスだった。',
+   intervention:'Built an agent-orchestration workflow: a planner decomposed each tool, worker agents generated the app code and bilingual content in parallel, and a critic/validation step checked the JS before publish.',
+   intervention_ja:'エージェント・オーケストレーションのワークフローを構築：planner が各ツールを分解し、worker エージェントがアプリのコードとバイリンガルのコンテンツを並列に生成し、critic／検証ステップが公開前に JS をチェックした。',
+   technique:'Agent orchestration',
+   impact:'Cut authoring time by ~70% and let one person maintain a bilingual EN/JA suite that previously would have needed a team; reused the pattern across multiple tools.',
+   impact_ja:'制作時間を約70%削減し、以前ならチームが必要だったバイリンガル EN/JA スイートを一人で維持できるようにした。このパターンを複数のツールで再利用した。',
+   responsible:'Added an automated validation gate (bracket-balance / no-error JS check) plus a human review of generated pedagogy and translations before publish, to catch hallucinated APIs and accuracy issues.',
+   responsible_ja:'自動検証ゲート（括弧の対応／JS のエラーなしチェック）に加え、公開前に生成された教育内容と翻訳の人間レビューを追加し、幻覚した API や精度の問題を捕捉した。'};
+}
+
+// stories use the EN technique name as the stored value; show JA label in JA mode.
+const stf=(st,key)=>(LANG==='ja'&&st&&st[key+'_ja'])?st[key+'_ja']:(st?st[key]:'');
+function fillTechniqueSelect(sel,val){
+  const ph=T('(pick a technique)','（手法を選択）');
+  let html=`<option value="">${esc(ph)}</option>`;
+  html+=TECHNIQUES.map((t,i)=>`<option value="${esc(t)}">${esc(LANG==='ja'?TECHNIQUES_JA[i]:t)}</option>`).join('');
+  sel.innerHTML=html;
+  sel.value=val||'';
+}
+
+function readForm(){
+  return {
+    title:$('f_title').value.trim(),
+    before:$('f_before').value.trim(),
+    intervention:$('f_intervention').value.trim(),
+    technique:$('f_technique').value,
+    impact:$('f_impact').value.trim(),
+    responsible:$('f_responsible').value.trim(),
+  };
+}
+function fillForm(st){
+  $('f_title').value=st.title||'';
+  $('f_before').value=st.before||'';
+  $('f_intervention').value=st.intervention||'';
+  fillTechniqueSelect($('f_technique'),st.technique||'');
+  $('f_impact').value=st.impact||'';
+  $('f_responsible').value=st.responsible||'';
+}
+function clearForm(){
+  editingId=null; fillForm({});
+  $('editStatus').textContent=T('New story','新規ストーリー');
+  $('saveBtn').textContent=T('Save story','ストーリーを保存');
+}
+function editStory(id){
+  const st=stories.find(x=>x.id===id); if(!st)return;
+  editingId=id; fillForm(st);
+  $('editStatus').textContent=T('Editing: ','編集中：')+(stf(st,'title')||T('(untitled)','（無題）'));
+  $('saveBtn').textContent=T('Update story','ストーリーを更新');
+  $('stories').scrollIntoView({behavior:'smooth'});
+}
+function delStory(id){
+  const st=stories.find(x=>x.id===id);
+  if(!confirm(T('Delete "','「')+((st&&stf(st,'title'))||T('this story','このストーリー'))+T('"?','」を削除しますか？')))return;
+  stories=stories.filter(x=>x.id!==id);
+  if(editingId===id) clearForm();
+  persistStories();
+}
+function saveStory(){
+  const d=readForm();
+  if(!d.title && !d.intervention && !d.impact){ alert(T('Add at least a title, intervention, or impact before saving.','保存する前に、少なくともタイトル・介入・インパクトのいずれかを入力してください。')); return; }
+  if(editingId){
+    const i=stories.findIndex(x=>x.id===editingId);
+    if(i>=0) stories[i]={...stories[i],...d,example:false};
+  }else{
+    stories.push({id:uid(),...d});
+  }
+  clearForm(); persistStories();
+}
+
+function renderStories(){
+  $('storyCount').textContent=stories.length;
+  const hide=stories.length?'none':'';
+  $('stEmpty').style.display=hide; $('stEmptyJa').style.display=hide;
+  $('stStories').innerHTML=stories.map(st=>{
+    const techVal=stf(st,'technique')||(st.technique?techLabel(st.technique):'');
+    const tech=st.technique?`<span class="pill bg-indigo-500/20 text-indigo-300">${esc(techVal)}</span>`:'';
+    const impactVal=stf(st,'impact');
+    const metricFlag=/\d/.test(st.impact||'')?`<span class="pill bg-emerald-500/20 text-emerald-300">${T('has metric','指標あり')}</span>`:`<span class="pill bg-rose-500/20 text-rose-300">${T('no metric','指標なし')}</span>`;
+    const respFlag=(st.responsible||'').trim()?`<span class="pill bg-emerald-500/20 text-emerald-300">${T('responsible AI ✓','responsible AI ✓')}</span>`:`<span class="pill bg-rose-500/20 text-rose-300">${T('responsible AI?','responsible AI?')}</span>`;
+    return `<div class="card rounded-lg p-3">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div class="font-semibold text-white">${esc(stf(st,'title')||T('(untitled)','（無題）'))} ${st.example?`<span class="pill bg-amber-500/20 text-amber-300 ml-1">${T('example — edit me','例 — 編集してください')}</span>`:''}</div>
+          ${impactVal?`<div class="text-sm text-slate-400 mt-1">📈 ${esc(impactVal)}</div>`:''}
+        </div>
+        <div class="flex gap-1 flex-none">
+          <button data-edit="${st.id}" class="text-xs px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:border-indigo-400 text-slate-300">${T('Edit','編集')}</button>
+          <button data-del="${st.id}" class="text-xs px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:border-rose-400 text-slate-300">${T('Delete','削除')}</button>
+        </div>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1">${tech} ${metricFlag} ${respFlag}</div>
+    </div>`;
+  }).join('');
+  $('stStories').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editStory(b.getAttribute('data-edit')));
+  $('stStories').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delStory(b.getAttribute('data-del')));
+}
+
+// ---------------- ③ SELF-ASSESSMENT ----------------
+const LS_ASSESS='aitp_assess';
+const COMPETENCIES=[
+ {id:'prompt', name:'Prompt engineering', name_ja:'Prompt engineering（プロンプト設計）', tip:'Practice role + few-shot + output-contract prompts; version them.', tip_ja:'役割＋few-shot＋出力契約のプロンプトを練習し、バージョン管理する。'},
+ {id:'context', name:'Context engineering / RAG', name_ja:'Context engineering / RAG', tip:'Read up on retrieval, context-window budgeting, and memory patterns.', tip_ja:'retrieval、コンテキスト窓の配分、メモリのパターンについて学ぶ。'},
+ {id:'tools', name:'Tool / function calling', name_ja:'Tool / function calling（ツール・関数呼び出し）', tip:'Design a small typed tool and wire it into an agent.', tip_ja:'小さな型付きツールを設計し、エージェントに組み込む。'},
+ {id:'orchestration', name:'Agent orchestration', name_ja:'Agent orchestration（エージェント・オーケストレーション）', tip:'Articulate planner-worker, critic loops, and fan-out from your own work.', tip_ja:'自分の仕事から planner-worker、critic ループ、fan-out を言語化する。'},
+ {id:'evals', name:'Evals & measurement', name_ja:'Evals & measurement（評価と測定）', tip:'Build a small eval set with a rubric for one task you care about.', tip_ja:'関心のあるタスク1つについて、ルーブリック付きの小さな eval セットを作る。'},
+ {id:'responsible', name:'Responsible / ethical AI', name_ja:'Responsible / ethical AI（責任ある／倫理的な AI）', tip:'Write a risk + bias + accuracy checklist you apply before shipping.', tip_ja:'出荷前に適用するリスク＋バイアス＋精度のチェックリストを書く。'},
+ {id:'redesign', name:'Workflow redesign & impact', name_ja:'Workflow redesign & impact（ワークフロー再設計とインパクト）', tip:'For one process, name the step AI lets you eliminate, and its metric.', tip_ja:'あるプロセスについて、AI でなくせる工程とその指標を挙げる。'},
+ {id:'current', name:'Staying current', name_ja:'Staying current（最新の維持）', tip:'Set up a repeatable model/technique bake-off on a fixed eval set.', tip_ja:'固定した eval セットで、繰り返し可能なモデル／手法の比較検証を構築する。'},
+];
+let ratings=loadAssess();
+function loadAssess(){ try{ return JSON.parse(localStorage.getItem(LS_ASSESS)||'{}')||{}; }catch(e){ return {}; } }
+function persistAssess(){ try{ localStorage.setItem(LS_ASSESS,JSON.stringify(ratings)); }catch(e){} renderAssess(); }
+
+function renderAssess(){
+  $('assessRows').innerHTML=COMPETENCIES.map(c=>{
+    const v=ratings[c.id]||0;
+    return `<div>
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm text-slate-200">${esc(T(c.name,c.name_ja))}</span>
+        <span class="text-xs ${v? (v<=2?'text-rose-400':'text-emerald-400'):'text-slate-500'}">${v?v+' / 5':T('unrated','未評価')}</span>
+      </div>
+      <input type="range" min="0" max="5" step="1" value="${v}" data-rate="${c.id}" class="w-full">
+    </div>`;
+  }).join('');
+  $('assessRows').querySelectorAll('[data-rate]').forEach(r=>{
+    r.oninput=()=>{ ratings[r.getAttribute('data-rate')]=parseInt(r.value,10); persistAssess(); };
+  });
+  // readiness = sum of ratings / max possible
+  const max=COMPETENCIES.length*5;
+  const sum=COMPETENCIES.reduce((a,c)=>a+(ratings[c.id]||0),0);
+  const pct=Math.round((sum/max)*100);
+  $('readBar').style.width=pct+'%';
+  $('readPct').textContent=pct+'%';
+  let msg;
+  if(pct>=80) msg=T('Strong — you can speak to AI tooling with confidence. Polish your soundbites and lead story.','強い — AI ツーリングについて自信を持って語れます。ひとこととリード・ストーリーを磨きましょう。');
+  else if(pct>=55) msg=T('Solid base. Close the flagged gaps below and you will interview well on this dimension.','土台はしっかりしています。下のフラグが立ったギャップを埋めれば、この観点で良い面接ができます。');
+  else if(pct>0) msg=T('Early. Pick the lowest two competencies and do the concrete next step listed.','まだ初期段階です。最も低い2つのコンピテンシーを選び、記載された具体的な次の一歩を実行しましょう。');
+  else msg=T('Rate yourself above to see your readiness and gaps.','上で自己評価すると、準備度とギャップが表示されます。');
+  $('readMsg').textContent=msg;
+  const gaps=COMPETENCIES.filter(c=>(ratings[c.id]||0)>0 && (ratings[c.id]||0)<=2);
+  $('gaps').innerHTML=gaps.length
+    ? `<p class="text-xs font-semibold text-rose-300 mb-1">${T('Gaps to close (rated ≤2):','埋めるべきギャップ（評価2以下）：')}</p>`+gaps.map(c=>
+        `<div class="text-xs text-slate-400 mb-1">• <b class="text-slate-200">${esc(T(c.name,c.name_ja))}</b> — ${esc(T(c.tip,c.tip_ja))}</div>`).join('')
+    : (sum>0?`<p class="text-xs text-emerald-400">${T('No gaps flagged — nice. Keep your lead story sharp.','フラグの立ったギャップはありません — 良いですね。リード・ストーリーを鋭く保ちましょう。')}</p>`:'');
+}
+
+// ---------------- ④ SPIEL COMPOSER ----------------
+function refreshSpielOptions(){
+  const sel=$('spielStory');
+  const prev=sel.value;
+  sel.innerHTML=stories.length
+    ? stories.map(s=>`<option value="${s.id}">${esc(stf(s,'title')||T('(untitled)','（無題）'))}</option>`).join('')
+    : `<option value="">${T('(no stories yet)','（まだストーリーがありません）')}</option>`;
+  if(stories.some(s=>s.id===prev)) sel.value=prev;
+}
+
+function topCompetencies(n){
+  return COMPETENCIES
+    .map(c=>({name:T(c.name,c.name_ja),v:ratings[c.id]||0}))
+    .filter(c=>c.v>=4)
+    .sort((a,b)=>b.v-a.v)
+    .slice(0,n)
+    .map(c=>c.name);
+}
+
+function buildSpiel(){
+  const st=stories.find(s=>s.id===$('spielStory').value)||stories[0];
+  const strengths=topCompetencies(3);
+  if(LANG==='ja') return buildSpielJa(st,strengths);
+  let p='';
+  p+='When it comes to AI tooling, I do not treat it as a gadget — I integrate it to redesign workflows and drive measurable impact. ';
+  if(strengths.length){
+    p+='My strongest areas are '+listJoin(strengths)+', and I lean on those daily. ';
+  }else{
+    p+='I work across prompt and context engineering, agent orchestration, and evals. ';
+  }
+  if(st){
+    if(st.before) p+='A concrete example: '+ensureEnd(lowerFirst(st.before))+' ';
+    if(st.intervention) p+='So I '+ensureEnd(lowerFirst(st.intervention))+(st.technique?' That is '+st.technique.toLowerCase()+' in practice. ':' ');
+    if(st.impact) p+='The measurable impact: '+ensureEnd(st.impact)+' ';
+    if(st.responsible) p+='I also owned the responsible-AI side — '+ensureEnd(lowerFirst(st.responsible))+' ';
+  }else{
+    p+='I have applied this on real projects, always instrumenting before-and-after so the impact is a number, not a story. ';
+  }
+  p+='I keep these skills current with a fixed eval set I re-run whenever a new model or technique lands, so my adoption decisions are evidence-based. ';
+  p+='Net: I use AI to multiply both my output and my team’s, while owning the risk, bias, and accuracy story end-to-end.';
+  return p;
+}
+function buildSpielJa(st,strengths){
+  let p='';
+  p+='AI ツーリングについては、私はそれをガジェットとしてではなく、ワークフローを再設計して測定可能なインパクトを生み出すために統合するものと捉えています。';
+  if(strengths.length){
+    p+='私の最も強い領域は'+listJoinJa(strengths)+'で、日々ここに頼っています。';
+  }else{
+    p+='私は prompt と context engineering、agent orchestration、そして evals にわたって取り組んでいます。';
+  }
+  if(st){
+    const before=stf(st,'before'), intervention=stf(st,'intervention'), impact=stf(st,'impact'), responsible=stf(st,'responsible');
+    if(before) p+='具体例を挙げます。'+ensureEndJa(before)+'';
+    if(intervention) p+='そこで私は、'+ensureEndJa(intervention)+(st.technique?'これはまさに'+techLabel(st.technique)+'の実践です。':'');
+    if(impact) p+='測定可能なインパクトは、'+ensureEndJa(impact)+'';
+    if(responsible) p+='責任ある AI の側面も私が担いました。'+ensureEndJa(responsible)+'';
+  }else{
+    p+='私はこれを実際のプロジェクトで適用し、常に導入前後を計測してインパクトを物語ではなく数値にしてきました。';
+  }
+  p+='これらのスキルは、新しいモデルや手法が出るたびに再実行する固定の eval セットで最新に保っているので、採用の判断は証拠に基づいています。';
+  p+='要するに、私はリスク・バイアス・精度の説明責任を一気通貫で担いながら、AI を使って自分とチームの両方のアウトプットを倍増させています。';
+  return p;
+}
+function listJoinJa(a){ return a.join('、'); }
+function ensureEndJa(s){ s=(s||'').trim(); if(!s)return s; return /[。．.!?！？]$/.test(s)?s:s+'。'; }
+function listJoin(a){ if(a.length===1)return a[0]; if(a.length===2)return a[0]+' and '+a[1]; return a.slice(0,-1).join(', ')+', and '+a[a.length-1]; }
+function lowerFirst(s){ s=(s||'').trim(); return s?s.charAt(0).toLowerCase()+s.slice(1):s; }
+function ensureEnd(s){ s=(s||'').trim(); if(!s)return s; return /[.!?]$/.test(s)?s:s+'.'; }
+function countWords(s){ return (s.trim().match(/\S+/g)||[]).length; }
+function countCharsJa(s){ return (s||'').replace(/\s+/g,'').length; }
+function updateWordCount(){
+  const v=$('spielOut').value;
+  const en=countWords(v), ja=countCharsJa(v);
+  if($('wordCount')) $('wordCount').textContent=en;
+  if($('wordCountJa')) $('wordCountJa').textContent=ja;
+}
+
+function genSpiel(){
+  if(!stories.length){ $('spielMsg').textContent=T('Add a story first for a richer spiel.','より充実したスピーチには、まずストーリーを追加してください。'); }
+  else $('spielMsg').textContent='';
+  $('spielOut').value=buildSpiel();
+  updateWordCount();
+}
+function copySpiel(){
+  const text=$('spielOut').value;
+  if(!text.trim()){ $('spielMsg').textContent=T('Generate a spiel first.','まずスピーチを生成してください。'); return; }
+  const done=()=>{ $('spielMsg').textContent=T('Copied to clipboard ✓','クリップボードにコピーしました ✓'); setTimeout(()=>$('spielMsg').textContent='',3000); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done,()=>fallbackCopy(text,done));
+  }else{ fallbackCopy(text,done); }
+}
+function fallbackCopy(text,done){
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ $('spielMsg').textContent=T('Copy failed — select manually.','コピーに失敗しました — 手動で選択してください。'); }
+  document.body.removeChild(ta);
+}
+
+// ---------------- i18n: apply + switch ----------------
+const LS_LANG='course-lang';
+function applyLang(){
+  // placeholders carry data-ph-en / data-ph-ja
+  document.querySelectorAll('[data-ph-en]').forEach(el=>{
+    el.placeholder = LANG==='ja' ? (el.getAttribute('data-ph-ja')||'') : (el.getAttribute('data-ph-en')||'');
+  });
+  document.documentElement.lang = LANG;
+}
+function reRenderAll(){
+  renderConcepts();
+  // preserve current technique selection across re-render
+  const cur=$('f_technique')?$('f_technique').value:'';
+  fillTechniqueSelect($('f_technique'),cur);
+  // keep edit status / save button label in sync
+  if(editingId){ const st=stories.find(x=>x.id===editingId); if(st){ $('editStatus').textContent=T('Editing: ','編集中：')+(stf(st,'title')||T('(untitled)','（無題）')); } $('saveBtn').textContent=T('Update story','ストーリーを更新'); }
+  else { $('editStatus').textContent=T('New story','新規ストーリー'); $('saveBtn').textContent=T('Save story','ストーリーを保存'); }
+  renderStories();
+  renderAssess();
+  refreshSpielOptions();
+  if($('spielOut').value.trim()) genSpiel(); else updateWordCount();
+}
+function setLang(l){
+  LANG = l==='ja' ? 'ja' : 'en';
+  document.body.classList.toggle('lang-ja', LANG==='ja');
+  document.body.classList.toggle('lang-en', LANG!=='ja');
+  $('enBtn').className='px-2 py-1.5 '+(LANG==='en'?'bg-indigo-600 text-white':'bg-slate-800 text-slate-300');
+  $('jaBtn').className='px-2 py-1.5 '+(LANG==='ja'?'bg-indigo-600 text-white':'bg-slate-800 text-slate-300');
+  try{ localStorage.setItem(LS_LANG,LANG); }catch(e){}
+  applyLang();
+  reRenderAll();
+}
+
+// ---------------- wire up ----------------
+renderConcepts();
+fillTechniqueSelect($('f_technique'),'');
+renderStories();
+renderAssess();
+refreshSpielOptions();
+
+$('saveBtn').onclick=saveStory;
+$('newBtn').onclick=clearForm;
+$('seedBtn').onclick=()=>{
+  if(stories.length && !confirm(T('Add the seeded example story to your list?','サンプル・ストーリーをリストに追加しますか？'))) return;
+  if(!stories.some(s=>s.id==='aitp_ex1')) stories.push(seedStory());
+  persistStories();
+};
+$('resetAssess').onclick=()=>{ if(confirm(T('Clear all self-assessment ratings?','すべての自己評価をクリアしますか？'))){ ratings={}; persistAssess(); } };
+$('genSpiel').onclick=genSpiel;
+$('copySpiel').onclick=copySpiel;
+$('spielStory').onchange=()=>{ if($('spielOut').value.trim()) genSpiel(); };
+$('spielOut').oninput=updateWordCount;
+$('enBtn').onclick=()=>setLang('en');
+$('jaBtn').onclick=()=>setLang('ja');
+
+// first-run: seed one example automatically
+if(loadStories().length===0 && !localStorage.getItem(LS_SEEDED)){
+  stories=[seedStory()];
+  try{ localStorage.setItem(LS_SEEDED,'1'); }catch(e){}
+  persistStories();
+}
+
+// initial language: stored pref, else browser, else en
+let initLang='en';
+try{ const s=localStorage.getItem(LS_LANG); if(s==='ja'||s==='en') initLang=s; else if((navigator.language||'').toLowerCase().startsWith('ja')) initLang='ja'; }catch(e){}
+setLang(initLang);
+</script>
+</body>
+</html>

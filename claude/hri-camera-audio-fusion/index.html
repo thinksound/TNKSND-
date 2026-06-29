@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HRI — Camera + Audio Fusion (a learning guide)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{ background:#0b1020; }
+  body{ font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; }
+  .card{ background:#111827; border:1px solid #1f2937; }
+  .k{ font-family:ui-monospace,Menlo,monospace; background:#0f172a; border:1px solid #1e293b; border-radius:5px; padding:1px 6px; color:#a7f3d0; font-size:.92em; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:6px; border-radius:9px; background:#1e293b; width:100%; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:18px;height:18px;border-radius:50%;background:#6366f1;cursor:pointer;border:2px solid #c7d2fe; }
+  h2{ scroll-margin-top:16px; }
+  table{ border-collapse:collapse;width:100%; } th,td{ border:1px solid #1f2937;padding:8px 10px;text-align:left;font-size:13px;vertical-align:top; } th{ background:#0d1117;color:#94a3b8; }
+  .chk{ display:flex;align-items:center;gap:5px;font-size:12px;color:#cbd5e1; }
+  .lsw{ display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#94a3b8;user-select:none; }
+  .lsw input{ display:none; }
+  .lsw .track{ width:46px;height:24px;background:#1e293b;border:1px solid #334155;border-radius:999px;position:relative;transition:.2s; }
+  .lsw .thumb{ position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#818cf8;transition:.2s; }
+  .lsw input:checked + .track{ background:#312e81; }
+  .lsw input:checked + .track .thumb{ left:24px;background:#a5b4fc; }
+  .lsw .on{ color:#e2e8f0;font-weight:700; }
+  body.lang-en [lang=ja]{ display:none; } body.lang-ja [lang=en]{ display:none; }
+</style>
+</head>
+<body class="text-slate-200 min-h-screen lang-en">
+<div class="max-w-[900px] mx-auto px-4 py-8">
+
+  <header class="mb-6 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">🤖 <span lang="en">HRI: Camera + Audio Fusion</span><span lang="ja">HRI：カメラ＋音声フュージョン</span></h1>
+      <p class="text-slate-400 mt-1"><span lang="en">A learning guide with interactive examples — how a robot uses mics + cameras together to know who's talking, where, and what they want. Plus what to consider in mic arrays, the loudspeaker enclosure, audio software, and fusion.</span><span lang="ja">インタラクティブな例で学ぶガイド — ロボットがマイクとカメラを併用し、誰が・どこで・何を求めて話しているかを把握する方法。さらにマイクアレイ、スピーカー筐体、音声ソフト、フュージョンの検討事項。</span></p>
+    </div>
+    <label class="lsw shrink-0"><span id="lblEn" class="on">EN</span><input type="checkbox" id="langToggle"><span class="track"><span class="thumb"></span></span><span id="lblJa">日本語</span></label>
+  </header>
+
+  <!-- 1 -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">1 · <span lang="en">Why fuse camera + audio?</span><span lang="ja">なぜカメラ＋音声を融合？</span></h2>
+    <p class="text-slate-300 leading-relaxed"><span lang="en">Each sense alone is fragile. <b>Audio</b> hears in the dark, around corners, and 360°, and tells you <i>roughly where</i> a voice is — but it's confused by reverb, noise, and several talkers, and it can't tell <i>who</i> by looks. <b>Vision</b> knows exactly <i>who</i> and <i>where</i> (faces, positions, lip motion) — but fails in the dark, at angles, behind occlusion, and can't hear. Fuse them and each covers the other's blind spots: more robust, less ambiguous, and more natural turn-taking.</span><span lang="ja">どの感覚も単独では脆い。<b>音声</b>は暗闇・物陰・360°で聞こえ、声の<i>おおよその位置</i>を教えるが、残響・雑音・複数話者に弱く、<i>誰か</i>を見分けられない。<b>視覚</b>は<i>誰</i>・<i>どこ</i>（顔・位置・口の動き）を正確に知るが、暗所・横顔・遮蔽で失敗し、音は聞こえない。両者を融合すれば互いの死角を補い、頑健で曖昧さが減り、自然な会話の番交代ができる。</span></p>
+  </section>
+
+  <!-- 2 -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">2 · <span lang="en">The HRI perception loop</span><span lang="ja">HRI 知覚ループ</span></h2>
+    <p class="text-slate-300 leading-relaxed mb-2"><span lang="en">A simple way to think about it:</span><span lang="ja">シンプルに捉えると：</span></p>
+    <div class="k block text-center py-3" style="white-space:normal;line-height:2">
+      <span lang="en">SENSE (mics + cameras) → LOCALIZE (where / who) → UNDERSTAND (speech, intent, emotion) → DECIDE → RESPOND (turn head, beamform, speak) → repeat</span>
+      <span lang="ja">センス（マイク＋カメラ）→ 位置特定（どこ/誰）→ 理解（発話・意図・感情）→ 判断 → 応答（首を向ける・ビーム形成・発話）→ 繰り返し</span>
+    </div>
+    <p class="text-slate-400 text-sm mt-2"><span lang="en">Fusion lives in the LOCALIZE/UNDERSTAND stages — and the response (turning the head, steering a beam) feeds back to improve sensing. That feedback ("active perception") is a big idea: move to hear and see better.</span><span lang="ja">フュージョンは「位置特定/理解」段階にあり、応答（首を向ける・ビームを向ける）がセンシング改善にフィードバックする。この「能動知覚」は重要な発想：よりよく聞き・見るために動く。</span></p>
+  </section>
+
+  <!-- 3 · interactive -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">3 · 🎮 <span lang="en">Active-speaker fusion playground</span><span lang="ja">アクティブ話者フュージョンの実験場</span></h2>
+    <p class="text-slate-300 leading-relaxed mb-3"><span lang="en">Three people face the robot. Toggle who's <b>speaking</b>, whose <b>face</b> the camera sees, and whose <b>lips</b> move. Then raise <b>Reverb</b>, <b>Noise</b>, and <b>Low light</b> separately: the scene <b>darkens</b> as light drops (faces fade, but the sound rings stay), and the live waveform shows the mic's <b>SNR collapsing</b> under noise/reverb. Watch fusion stay right when audio <i>or</i> vision alone fails. <span class="text-slate-400">(Audio = <i>that / where</i>; vision = <i>which</i>.)</span></span><span lang="ja">3人がロボットに向いています。誰が<b>発話</b>中、カメラが誰の<b>顔</b>を見ているか、誰の<b>口</b>が動くかを切り替えます。次に<b>残響</b>・<b>雑音</b>・<b>低照度</b>を個別に上げます：光が落ちるとシーンが<b>暗く</b>なり（顔は薄れるが音のリングは残る）、波形はマイクの<b>SNR が崩れる</b>様子を示します。音声<i>か</i>視覚の片方が失敗してもフュージョンが正しいことを確認。<span class="text-slate-400">（音声＝<i>有無/位置</i>、視覚＝<i>どの人</i>。）</span></span></p>
+    <canvas id="scene" class="w-full rounded-lg" style="height:330px"></canvas>
+    <div class="grid sm:grid-cols-3 gap-3 mt-3" id="people"></div>
+    <div class="grid sm:grid-cols-3 gap-4 mt-3">
+      <div><div class="flex justify-between text-sm"><label class="text-slate-300">🌫️ <span lang="en">Reverb</span><span lang="ja">残響</span></label><span class="font-mono text-amber-300" id="vRev">0.30</span></div>
+        <input id="rev" type="range" min="0" max="1" step="0.05" value="0.3"></div>
+      <div><div class="flex justify-between text-sm"><label class="text-slate-300">📢 <span lang="en">Noise</span><span lang="ja">雑音</span></label><span class="font-mono text-amber-300" id="vNoise">0.20</span></div>
+        <input id="noise" type="range" min="0" max="1" step="0.05" value="0.2"></div>
+      <div><div class="flex justify-between text-sm"><label class="text-slate-300">🌙 <span lang="en">Low light</span><span lang="ja">低照度</span></label><span class="font-mono text-sky-300" id="vLow">0.00</span></div>
+        <input id="low" type="range" min="0" max="1" step="0.05" value="0"></div>
+    </div>
+    <div class="mt-4">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm text-slate-300"><span lang="en">What the robot hears (live)</span><span lang="ja">ロボットが聞く音（ライブ）</span></span>
+        <span class="text-xs font-mono px-2 py-0.5 rounded" id="snrBadge" style="background:#1e293b;color:#94a3b8">SNR — dB</span>
+      </div>
+      <canvas id="ts" class="w-full rounded-lg" style="height:120px;background:#0d1117"></canvas>
+    </div>
+    <div class="mt-3 grid sm:grid-cols-3 gap-3 text-sm">
+      <div class="card rounded-lg p-3"><div class="text-amber-300 font-semibold mb-1">🔊 <span lang="en">Audio only</span><span lang="ja">音声のみ</span></div><div id="rAudio" class="text-slate-300"></div></div>
+      <div class="card rounded-lg p-3"><div class="text-sky-300 font-semibold mb-1">👁 <span lang="en">Vision only</span><span lang="ja">視覚のみ</span></div><div id="rVision" class="text-slate-300"></div></div>
+      <div class="card rounded-lg p-3 border-emerald-500/40"><div class="text-emerald-300 font-semibold mb-1">✨ <span lang="en">Fusion</span><span lang="ja">フュージョン</span></div><div id="rFusion" class="text-slate-300"></div></div>
+    </div>
+    <div id="rWhy" class="mt-3 text-sm rounded-lg px-3 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-200"></div>
+  </section>
+
+  <!-- 4 · mic arrays -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">4 · <span lang="en">What mic array? (and what matters)</span><span lang="ja">どんなマイクアレイ？（重要点）</span></h2>
+    <p class="text-slate-300 leading-relaxed mb-3"><span lang="en">The array gives the robot direction (DOA), source separation, and noise rejection. Geometry is a real design choice:</span><span lang="ja">アレイはロボットに方向（DOA）、音源分離、雑音抑圧を与えます。形状は重要な設計判断です：</span></p>
+    <div class="overflow-x-auto"><table>
+      <thead><tr><th><span lang="en">Array</span><span lang="ja">アレイ</span></th><th><span lang="en">Good for</span><span lang="ja">得意</span></th><th><span lang="en">Watch out</span><span lang="ja">注意</span></th></tr></thead>
+      <tbody>
+        <tr><td>2-mic</td><td><span lang="en">left/right or front/back, cheap, small</span><span lang="ja">左右/前後、安価、小型</span></td><td><span lang="en">limited; front-back ambiguity</span><span lang="ja">能力限定・前後曖昧</span></td></tr>
+        <tr><td><span lang="en">4–8 mic circular</span><span lang="ja">4〜8 円形</span></td><td><span lang="en">full 360° azimuth (head/tabletop)</span><span lang="ja">360°方位（頭部/卓上）</span></td><td><span lang="en">azimuth only (no elevation)</span><span lang="ja">方位のみ（仰角なし）</span></td></tr>
+        <tr><td><span lang="en">3D / tetrahedral / spherical</span><span lang="ja">3D/四面体/球状</span></td><td><span lang="en">azimuth + elevation (people of different heights, sitting/standing)</span><span lang="ja">方位＋仰角（背の高さ・座/立ちの違い）</span></td><td><span lang="en">more mics, calibration</span><span lang="ja">マイク増・校正</span></td></tr>
+        <tr><td><span lang="en">distributed (head + body)</span><span lang="ja">分散（頭部＋胴体）</span></td><td><span lang="en">wide baseline → better low-freq DOA; close-talk mic too</span><span lang="ja">広基線→低域DOA良好、近接マイクも</span></td><td><span lang="en">sync, cabling, ego-noise paths</span><span lang="ja">同期・配線・自己雑音経路</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="text-slate-300 mt-3 font-medium"><span lang="en">What actually matters on a robot:</span><span lang="ja">ロボットで実際に効くこと：</span></p>
+    <ul class="list-disc list-inside text-slate-300 text-sm mt-1 space-y-1">
+      <li><span lang="en"><b>Elevation</b> — a robot looks up/down at people; a planar array can't tell a child from a ceiling reflection. Consider 3D.</span><span lang="ja"><b>仰角</b> — ロボットは人を見上げ/見下ろす。平面アレイは子供と天井反射を区別できない。3Dを検討。</span></li>
+      <li><span lang="en"><b>Ego-noise & placement</b> — keep mics away from motors, fans, the loudspeaker; isolate vibration (rubber mounts); flush-mount, avoid cavities.</span><span lang="ja"><b>自己雑音と配置</b> — モーター・ファン・スピーカーから離す。防振（ゴムマウント）。面一実装、空洞を避ける。</span></li>
+      <li><span lang="en"><b>Capsule SNR & matching</b> — low self-noise capsules; differential arrays need matched mics (or self-calibration). See the <a class="text-indigo-300 underline" href="../mic-basics-guide/index.html">mic basics guide</a>.</span><span lang="ja"><b>カプセルSNRと整合</b> — 低自己雑音カプセル。差動アレイは整合（または自己校正）が必要。<a class="text-indigo-300 underline" href="../mic-basics-guide/index.html">マイク基礎ガイド</a>参照。</span></li>
+      <li><span lang="en"><b>Co-locate with the camera</b> — known geometry between array and camera makes audio↔image mapping (fusion) easy and calibratable.</span><span lang="ja"><b>カメラと同一配置</b> — アレイとカメラの幾何が既知だと音↔画像の対応（フュージョン）が容易で校正可能。</span></li>
+      <li><span lang="en"><b>Wind/pop & DOF</b> — protect from wind; more mics = more degrees of freedom (null more interferers) but more cost/compute.</span><span lang="ja"><b>風/ポップと自由度</b> — 風対策。マイク数が多いほど自由度（より多くの干渉を抑圧）が増すが、コスト/計算も増。</span></li>
+    </ul>
+  </section>
+
+  <!-- 5 · speaker enclosure -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">5 · <span lang="en">The loudspeaker enclosure matters</span><span lang="ja">スピーカー筐体が重要な理由</span></h2>
+    <p class="text-slate-300 leading-relaxed"><span lang="en">The robot's own voice (TTS) is the <b>loudest sound its mics ever hear</b>. If it can't cancel that, it can't listen while speaking (no barge-in). The enclosure shapes how hard that is:</span><span lang="ja">ロボット自身の声（TTS）は<b>マイクが聞く最大音</b>です。これを消せないと、話しながら聞けません（バージインなし）。筐体がその難易度を左右します：</span></p>
+    <ul class="list-disc list-inside text-slate-300 text-sm mt-2 space-y-1">
+      <li><span lang="en"><b>Mechanical isolation</b> — a rigid, decoupled (rubber-mounted) speaker stops panel vibration from traveling structurally into the mics (structure-borne echo is hard to cancel).</span><span lang="ja"><b>機械的絶縁</b> — 剛性が高く防振（ゴムマウント）されたスピーカーは、パネル振動が構造を通じてマイクへ伝わるのを防ぐ（構造伝搬エコーは消しにくい）。</span></li>
+      <li><span lang="en"><b>Placement & direction</b> — face the speaker away from the mics, maximize distance, separate the speaker cavity from the mic ports.</span><span lang="ja"><b>配置と向き</b> — スピーカーをマイクから背ける、距離を最大化、スピーカー空洞とマイクポートを分離。</span></li>
+      <li><span lang="en"><b>Low distortion / no clipping</b> — linear echo is easy for AEC to predict; a distorting or clipping speaker leaves a residual the linear canceller can't remove. Keep levels under the limit.</span><span lang="ja"><b>低歪み/クリップなし</b> — 線形エコーはAECで予測しやすい。歪む/クリップするスピーカーは線形では消せない残差を残す。レベルを上限以下に。</span></li>
+      <li><span lang="en"><b>Stable echo path</b> — a wobbly mount changes the echo path as the robot moves, forcing the AEC to re-converge constantly. Rigidity helps.</span><span lang="ja"><b>安定したエコー経路</b> — ぐらつく取付はロボット移動でエコー経路を変え、AECが再収束し続ける。剛性が有効。</span></li>
+      <li><span lang="en"><b>Sealed vs ported</b> — ports add bass but can leak/whistle and couple into mics; weigh against the AEC burden.</span><span lang="ja"><b>密閉 vs バスレフ</b> — ポートは低音を足すが漏れ/笛鳴りでマイクに結合し得る。AEC負担と天秤に。</span></li>
+    </ul>
+    <p class="text-slate-400 text-sm mt-2"><span lang="en">Bonus: the robot <i>knows</i> when it's speaking (it has the reference signal) — use that both for AEC and as a <b>fusion cue</b> ("I'm talking → expect a barge-in").</span><span lang="ja">補足：ロボットは自分が話している時を<i>知っている</i>（参照信号を持つ）— それをAECと<b>フュージョンの手がかり</b>（「自分が話す→バージインを予期」）の両方に使える。</span></p>
+  </section>
+
+  <!-- 6 · audio software -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">6 · <span lang="en">Audio software toolbox</span><span lang="ja">音声ソフトのツールボックス</span></h2>
+    <p class="text-slate-300 text-sm mb-3"><span lang="en">Useful features and why they matter for HRI:</span><span lang="ja">便利な機能と HRI での意義：</span></p>
+    <div class="overflow-x-auto"><table>
+      <thead><tr><th><span lang="en">Feature</span><span lang="ja">機能</span></th><th><span lang="en">Why it helps a robot</span><span lang="ja">ロボットに役立つ理由</span></th></tr></thead>
+      <tbody>
+        <tr><td>VAD</td><td><span lang="en">detect speech, gate the pipeline, save compute & power</span><span lang="ja">発話検出、パイプラインのゲート、計算/電力節約</span></td></tr>
+        <tr><td><span lang="en">Wake word</span><span lang="ja">ウェイクワード</span></td><td><span lang="en">hands-free attention trigger ("Hey robot")</span><span lang="ja">ハンズフリーの注意喚起（「ねえロボット」）</span></td></tr>
+        <tr><td>AEC</td><td><span lang="en">cancel the robot's own TTS → listen while speaking (barge-in)</span><span lang="ja">自身のTTSを消去 → 話しながら聞く（バージイン）</span></td></tr>
+        <tr><td><span lang="en">Noise suppression</span><span lang="ja">ノイズ抑圧</span></td><td><span lang="en">HVAC, fans, motors, ego-noise</span><span lang="ja">空調・ファン・モーター・自己雑音</span></td></tr>
+        <tr><td><span lang="en">Dereverberation</span><span lang="ja">残響除去</span></td><td><span lang="en">far-field, echoey rooms</span><span lang="ja">遠方界・反響する部屋</span></td></tr>
+        <tr><td>DOA / SSL</td><td><span lang="en">where is the talker → turn head, steer beam, feed fusion</span><span lang="ja">話者の位置 → 首を向ける・ビーム・フュージョンへ</span></td></tr>
+        <tr><td><span lang="en">Beamforming (MVDR)</span><span lang="ja">ビームフォーミング(MVDR)</span></td><td><span lang="en">focus on target, reject others → cleaner ASR</span><span lang="ja">対象に集中・他を抑圧 → ASR向上</span></td></tr>
+        <tr><td>BSS</td><td><span lang="en">separate overlapping talkers into streams</span><span lang="ja">重なる話者を分離</span></td></tr>
+        <tr><td><span lang="en">Speaker ID / verification</span><span lang="ja">話者ID/照合</span></td><td><span lang="en">who is talking → personalization, access</span><span lang="ja">誰か → 個別化・アクセス制御</span></td></tr>
+        <tr><td><span lang="en">Diarization</span><span lang="ja">ダイアライゼーション</span></td><td><span lang="en">who spoke when, in a group</span><span lang="ja">集団で誰がいつ話したか</span></td></tr>
+        <tr><td>ASR + <span lang="en">endpointing</span><span lang="ja">エンドポイント</span></td><td><span lang="en">speech→text, and knowing when the user finished</span><span lang="ja">音声→テキスト、発話終了の検知</span></td></tr>
+        <tr><td><span lang="en">Paralinguistics / emotion</span><span lang="ja">パラ言語/感情</span></td><td><span lang="en">tone, sentiment, age → empathetic, adaptive responses</span><span lang="ja">声色・感情・年齢 → 共感的・適応的応答</span></td></tr>
+        <tr><td><span lang="en">Acoustic event detection</span><span lang="ja">音響イベント検出</span></td><td><span lang="en">doorbell, alarm, baby cry → context & safety</span><span lang="ja">チャイム・警報・泣き声 → 文脈と安全</span></td></tr>
+        <tr><td><span lang="en">Full-duplex / barge-in</span><span lang="ja">全二重/バージイン</span></td><td><span lang="en">interruptible, natural dialog</span><span lang="ja">割り込み可能で自然な対話</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- 7 · fusion -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">7 · <span lang="en">Kinds of fusion</span><span lang="ja">フュージョンの種類</span></h2>
+    <div class="grid md:grid-cols-2 gap-4 text-sm">
+      <div class="card rounded-lg p-3"><div class="text-indigo-300 font-semibold mb-1"><span lang="en">Spatial</span><span lang="ja">空間的</span></div><p class="text-slate-300"><span lang="en">Match audio DOA to camera face/person positions → active-speaker localization. Needs known array↔camera geometry (calibration).</span><span lang="ja">音声DOAをカメラの顔/人物位置に対応づけ → アクティブ話者特定。アレイ↔カメラの幾何（校正）が必要。</span></p></div>
+      <div class="card rounded-lg p-3"><div class="text-indigo-300 font-semibold mb-1"><span lang="en">Temporal (audio-visual)</span><span lang="ja">時間的（視聴覚）</span></div><p class="text-slate-300"><span lang="en">Sync lip motion with sound → AV-VAD, AV-ASR, AV speaker separation. Great when audio alone is ambiguous.</span><span lang="ja">口の動きと音を同期 → AV-VAD、AV-ASR、視聴覚分離。音声が曖昧な時に有効。</span></p></div>
+      <div class="card rounded-lg p-3"><div class="text-indigo-300 font-semibold mb-1"><span lang="en">Identity</span><span lang="ja">同一性</span></div><p class="text-slate-300"><span lang="en">Face recognition + voice ID → robust "who," personalization, security.</span><span lang="ja">顔認識＋声紋ID → 頑健な「誰」、個別化、セキュリティ。</span></p></div>
+      <div class="card rounded-lg p-3"><div class="text-indigo-300 font-semibold mb-1"><span lang="en">Range / depth</span><span lang="ja">距離/深度</span></div><p class="text-slate-300"><span lang="en">Camera depth + acoustic near/far → is the user in the room or far away? Attend to the near talker, ignore the TV.</span><span lang="ja">カメラ深度＋音響の近/遠 → 室内か遠方か。近い話者に注目、TVは無視。</span></p></div>
+      <div class="card rounded-lg p-3"><div class="text-indigo-300 font-semibold mb-1"><span lang="en">Attention / gaze</span><span lang="ja">注意/視線</span></div><p class="text-slate-300"><span lang="en">Who is looking at the robot AND talking → who actually wants to interact.</span><span lang="ja">ロボットを見ていて かつ 話している人 → 実際に関わりたい人。</span></p></div>
+      <div class="card rounded-lg p-3"><div class="text-indigo-300 font-semibold mb-1"><span lang="en">How to combine</span><span lang="ja">統合の仕方</span></div><p class="text-slate-300"><span lang="en"><b>Early</b> (fuse features) vs <b>late</b> (fuse decisions) vs <b>hybrid</b>. Track people over time with Kalman/particle filters; weight each modality by its live <b>confidence</b> and resolve conflicts — trust whichever sense is reliable right now (that's what the playground does).</span><span lang="ja"><b>早期</b>（特徴融合）vs <b>後期</b>（判断融合）vs <b>ハイブリッド</b>。カルマン/パーティクルで人を時間追跡。各モダリティをその時の<b>信頼度</b>で重み付けし矛盾を解消 — 今信頼できる感覚を信じる（実験場が示す通り）。</span></p></div>
+    </div>
+  </section>
+
+  <!-- 8 · inspiration -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">8 · <span lang="en">Example interactions to inspire you</span><span lang="ja">発想を刺激する対話例</span></h2>
+    <ul class="space-y-2 text-slate-300 text-sm">
+      <li><span lang="en">🗣️ <b>Cocktail party:</b> in a group, fuse lip motion + DOA to lock onto whoever is addressing the robot, beamform on them, turn the head — and ignore the TV (it has no looking face / no depth match).</span><span lang="ja">🗣️ <b>カクテルパーティ：</b>集団で、口の動き＋DOAを融合し、ロボットに話しかけている人にロックし、ビームを向け、首を回す — TVは無視（見る顔も深度一致もない）。</span></li>
+      <li><span lang="en">📣 <b>Call from another room:</b> a voice from off-camera, far away → audio DOA + range say "turn / move toward it," then the camera takes over once the person is in view.</span><span lang="ja">📣 <b>別室からの呼びかけ：</b>カメラ外・遠方の声 → 音声DOA＋距離が「そちらへ向け/移動」、人が視野に入ったらカメラが引き継ぐ。</span></li>
+      <li><span lang="en">✋ <b>Barge-in:</b> the robot is mid-sentence; the user interrupts → AEC + VAD let it hear over its own voice, stop, and listen.</span><span lang="ja">✋ <b>バージイン：</b>ロボットが話している最中にユーザーが割り込む → AEC＋VADで自分の声越しに聞き取り、止めて聞く。</span></li>
+      <li><span lang="en">🙋 <b>Name + gaze:</b> wake word heard → find who looked at the robot → confirm with voice ID → reply by name. Two senses, almost no false triggers.</span><span lang="ja">🙋 <b>名前＋視線：</b>ウェイクワード → ロボットを見た人を特定 → 声紋IDで確認 → 名前で返答。二感覚で誤反応ほぼゼロ。</span></li>
+      <li><span lang="en">🍳 <b>Noisy kitchen:</b> appliances + ego-noise; AV-VAD + beamforming + NS keep ASR alive where audio-only would drown.</span><span lang="ja">🍳 <b>騒がしい台所：</b>家電＋自己雑音。AV-VAD＋ビーム＋NSで、音声のみなら溺れる所でもASR維持。</span></li>
+    </ul>
+    <p class="text-slate-300 text-sm mt-3 font-medium"><span lang="en">Ideas worth prototyping:</span><span lang="ja">試作する価値のあるアイデア：</span></p>
+    <ul class="list-disc list-inside text-slate-300 text-sm mt-1 space-y-1">
+      <li><span lang="en">Co-design the mic-array geometry <i>with</i> the camera FOV so every visible face maps to a beam.</span><span lang="ja">マイクアレイ形状をカメラ視野<i>と一緒に</i>設計し、見える顔ごとにビームを割り当てる。</span></li>
+      <li><span lang="en">Use the TTS reference as a fusion signal (the robot anticipates barge-in while speaking).</span><span lang="ja">TTS参照をフュージョン信号に（発話中はバージインを予期）。</span></li>
+      <li><span lang="en">Learned late-fusion with explicit per-modality confidence — degrade gracefully when one sense fails.</span><span lang="ja">モダリティ別の明示的信頼度を持つ学習型後期融合 — 片方が失敗しても緩やかに劣化。</span></li>
+      <li><span lang="en">Active perception: move the head to raise <i>both</i> audio and visual SNR before committing.</span><span lang="ja">能動知覚：確定前に首を動かして音声と視覚の<i>両方</i>のSNRを上げる。</span></li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
+  <section class="card rounded-xl p-5 mb-5">
+    <h2 class="text-xl font-semibold text-white mb-2">9 · <span lang="en">Takeaways</span><span lang="ja">要点</span></h2>
+    <ul class="list-disc list-inside text-slate-300 space-y-1 text-sm">
+      <li><span lang="en">Audio = <i>that/where</i> someone is talking (360°, in the dark); Vision = <i>who/which</i> precisely. Fusion = robust both.</span><span lang="ja">音声＝<i>誰かが・どこで</i>話している（360°・暗所）；視覚＝<i>誰/どの人</i>を正確に。融合＝両者で頑健。</span></li>
+      <li><span lang="en">Pick the array for the job — go <b>3D</b> if elevation matters; keep mics away from motors & the speaker.</span><span lang="ja">用途でアレイ選定 — 仰角が要るなら<b>3D</b>。マイクはモーターやスピーカーから離す。</span></li>
+      <li><span lang="en">The <b>speaker enclosure</b> decides how well AEC works → whether the robot can listen while it talks.</span><span lang="ja"><b>スピーカー筐体</b>がAECの効きを左右 → 話しながら聞けるか。</span></li>
+      <li><span lang="en">Weight each sense by its live confidence; let the reliable one win moment to moment.</span><span lang="ja">各感覚をその時の信頼度で重み付け；信頼できる方を都度勝たせる。</span></li>
+    </ul>
+    <p class="text-sm text-slate-400 mt-3"><span lang="en">Related tools you have:</span><span lang="ja">関連ツール：</span>
+      <a class="text-indigo-300 underline" href="../mic-basics-guide/index.html"><span lang="en">mic basics</span><span lang="ja">マイク基礎</span></a> ·
+      <a class="text-indigo-300 underline" href="../aac-array-demo/index.html"><span lang="en">mic-array DSP</span><span lang="ja">アレイDSP</span></a> ·
+      <a class="text-indigo-300 underline" href="../mvdr-vs-conventional/mvdr-vs-conventional.html">MVDR</a> ·
+      <a class="text-indigo-300 underline" href="../aec-simulator/aec-simulator.html">AEC</a></p>
+  </section>
+
+  <footer class="text-center text-xs text-slate-600"><span lang="en">A learning guide for human-robot interaction · the playground uses a simple illustrative fusion rule, not a trained model</span><span lang="ja">人とロボットの対話のための学習ガイド · 実験場は学習モデルではなく簡易な説明用の融合ルール</span></footer>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+let LANG='en'; const T=(en,ja)=>LANG==='ja'?ja:en;
+
+// ---- active-speaker playground ----
+const PEOPLE=[{id:'P1',az:135},{id:'P2',az:90},{id:'P3',az:45}];
+// build control rows
+$('people').innerHTML=PEOPLE.map((p,i)=>`<div class="card rounded-lg p-3">
+  <div class="font-semibold text-white mb-1">${p.id}</div>
+  <label class="chk"><input type="checkbox" data-i="${i}" data-t="spk"> <span>🔊 <span lang="en">speaking</span><span lang="ja">発話</span></span></label>
+  <label class="chk"><input type="checkbox" data-i="${i}" data-t="face"> <span>👁 <span lang="en">face seen</span><span lang="ja">顔が見える</span></span></label>
+  <label class="chk"><input type="checkbox" data-i="${i}" data-t="lip"> <span>👄 <span lang="en">lips moving</span><span lang="ja">口が動く</span></span></label>
+</div>`).join('');
+const state=PEOPLE.map(()=>({spk:false,face:false,lip:false}));
+// default: P2 fully active
+state[1]={spk:true,face:true,lip:true};
+
+function syncChecks(){ document.querySelectorAll('#people input').forEach(inp=>{ const i=+inp.dataset.i,t=inp.dataset.t; inp.checked=state[i][t]; }); }
+document.addEventListener('change',e=>{ const inp=e.target; if(inp.dataset&&inp.dataset.t!==undefined&&inp.dataset.i!==undefined){ state[+inp.dataset.i][inp.dataset.t]=inp.checked; render(); } });
+
+const sc=$('scene'), g=sc.getContext('2d');
+const ts=$('ts'), tg=ts.getContext('2d');
+const lerp=(a,b,t)=>a+(b-a)*t;
+function S(){ return { rev:+$('rev').value, noise:+$('noise').value, low:+$('low').value }; }
+function audioConf(i){ if(!state[i].spk) return 0; const s=S(); const snr=30-35*s.noise; const base=Math.max(0,Math.min(1,(snr+5)/35)); return base*(1-0.6*s.rev); }
+function visConf(i){ const s=S(); return (state[i].face&&state[i].lip)? Math.max(0,Math.min(1,1-1.1*s.low))*0.9 : 0; }
+function decide(){ let ai=-1,av=0,vi=-1,vv=0;
+  PEOPLE.forEach((p,i)=>{ const a=audioConf(i); if(a>av){av=a;ai=i;} const v=visConf(i); if(v>vv){vv=v;vi=i;} });
+  let fi=-1,fv=-1; PEOPLE.forEach((p,i)=>{ if(!state[i].spk) return; const s=audioConf(i)+visConf(i)+((audioConf(i)>0.08&&visConf(i)>0.08)?0.6:0); if(s>fv){fv=s;fi=i;} });
+  return {ai,av,vi,vv,fi}; }
+let P=decide();
+function nodeXY(p,W,H){ const cx=W/2, cy=H-30, R=Math.min(W*0.40,H*0.74); const a=p.az*Math.PI/180; return {x:cx+R*Math.cos(a), y:cy-R*Math.sin(a)}; }
+
+function drawScene(time){
+  const s=S(), dpr=window.devicePixelRatio||1, W=sc.clientWidth, H=sc.clientHeight;
+  sc.width=W*dpr; sc.height=H*dpr; g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle=`rgb(${Math.round(lerp(13,2,s.low))},${Math.round(lerp(17,3,s.low))},${Math.round(lerp(23,11,s.low))})`; g.fillRect(0,0,W,H);
+  if(s.low>0){ g.fillStyle=`rgba(2,4,12,${0.55*s.low})`; g.fillRect(0,0,W,H); }
+  const cx=W/2, cy=H-30;
+  // sound rings (audio cue — independent of light)
+  PEOPLE.forEach((p,i)=>{ if(!state[i].spk) return; const t=nodeXY(p,W,H), cf=audioConf(i);
+    for(let k=0;k<3;k++){ const ph=((time/780)+k/3)%1, r=14+ph*38; g.strokeStyle=`rgba(245,158,11,${((1-ph)*(0.18+0.5*cf)).toFixed(3)})`; g.lineWidth=2; g.beginPath(); g.arc(t.x,t.y,r,0,7); g.stroke(); } });
+  // indicator lines
+  if(P.ai>=0 && P.av>0.02){ const t=nodeXY(PEOPLE[P.ai],W,H); g.strokeStyle=`rgba(245,158,11,${(0.25+0.6*P.av).toFixed(2)})`; g.setLineDash([6,4]); g.lineWidth=2; g.beginPath(); g.moveTo(cx,cy); g.lineTo(t.x,t.y); g.stroke(); g.setLineDash([]); }
+  if(P.vi>=0 && P.vv>0.02){ const t=nodeXY(PEOPLE[P.vi],W,H); g.strokeStyle=`rgba(96,165,250,${(0.25+0.6*P.vv).toFixed(2)})`; g.setLineDash([2,4]); g.lineWidth=2; g.beginPath(); g.moveTo(cx,cy); g.lineTo(t.x,t.y); g.stroke(); g.setLineDash([]); }
+  if(P.fi>=0){ const t=nodeXY(PEOPLE[P.fi],W,H), ang=Math.atan2(t.y-cy,t.x-cx); g.fillStyle='rgba(52,211,153,.16)'; g.beginPath(); g.moveTo(cx,cy); g.arc(cx,cy,Math.hypot(t.x-cx,t.y-cy),ang-0.16,ang+0.16); g.closePath(); g.fill(); }
+  // people
+  PEOPLE.forEach((p,i)=>{ const t=nodeXY(p,W,H), faceVis=state[i].face? Math.max(0,1-s.low):0;
+    g.beginPath(); g.arc(t.x,t.y,26,0,7); g.fillStyle='#1e293b'; g.fill();
+    g.lineWidth=3; g.strokeStyle=(i===P.fi)?'#34d399':'#334155'; g.stroke();
+    if(state[i].face){ g.globalAlpha=Math.max(0.1,faceVis); g.fillStyle='#e2e8f0';
+      g.beginPath(); g.arc(t.x-8,t.y-5,3,0,7); g.arc(t.x+8,t.y-5,3,0,7); g.fill();
+      const open=state[i].lip?(2+3*Math.abs(Math.sin(time/120))):1.6; g.beginPath(); g.ellipse(t.x,t.y+8,5,open,0,0,7); g.fill(); g.globalAlpha=1;
+    } else { g.fillStyle='#475569'; g.font='bold 18px system-ui'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('?',t.x,t.y); }
+    g.fillStyle='#94a3b8'; g.font='12px system-ui'; g.textAlign='center'; g.textBaseline='alphabetic'; g.fillText(p.id,t.x,t.y+42); });
+  // robot
+  g.fillStyle='#6366f1'; g.beginPath(); g.roundRect(cx-28,cy-18,56,34,9); g.fill();
+  g.fillStyle='#0b1020'; g.beginPath(); g.arc(cx-10,cy-2,4,0,7); g.arc(cx+10,cy-2,4,0,7); g.fill();
+  if(s.low>0.35){ g.fillStyle=`rgba(148,163,184,${(0.4+0.4*s.low).toFixed(2)})`; g.font='13px system-ui'; g.textAlign='left'; g.textBaseline='alphabetic'; g.fillText(T('🌙 low light','🌙 低照度'),10,22); }
+}
+
+// time-series: clean speech vs what the mic hears (degrades with noise/reverb)
+const N=360, tsClean=new Float32Array(N), tsMic=new Float32Array(N);
+let gate=0, gtimer=0, carrier=0, revState=0, snrEMA=20;
+function stepTS(){ const s=S(), speaking=(P.fi>=0);
+  for(let k=0;k<4;k++){ gtimer--; if(gtimer<=0){ gate=gate>0.5?0:1; gtimer=gate?(16+Math.random()*22):(8+Math.random()*16); }
+    carrier=0.65*carrier+0.35*(Math.random()*2-1);
+    const c=speaking? gate*carrier : 0; revState=0.93*revState+0.07*c;
+    const mic=c + s.noise*(Math.random()*2-1)*0.9 + s.rev*1.5*revState;
+    tsClean.copyWithin(0,1); tsClean[N-1]=c; tsMic.copyWithin(0,1); tsMic[N-1]=mic; }
+  let ps=0,pn=0; for(let i=N-120;i<N;i++){ ps+=tsClean[i]*tsClean[i]; const d=tsMic[i]-tsClean[i]; pn+=d*d; }
+  snrEMA=0.88*snrEMA+0.12*(10*Math.log10((ps+1e-6)/(pn+1e-6))); }
+function drawTS(){ const dpr=window.devicePixelRatio||1, W=ts.clientWidth, H=ts.clientHeight;
+  ts.width=W*dpr; ts.height=H*dpr; tg.setTransform(dpr,0,0,dpr,0,0); tg.fillStyle='#0d1117'; tg.fillRect(0,0,W,H);
+  const half=H/2; const lane=(arr,col,yc)=>{ tg.strokeStyle=col; tg.lineWidth=1.5; tg.beginPath(); for(let i=0;i<N;i++){ const x=i/(N-1)*W, y=yc-arr[i]*(half*0.40); i===0?tg.moveTo(x,y):tg.lineTo(x,y);} tg.stroke(); };
+  tg.strokeStyle='#1f2937'; tg.beginPath(); tg.moveTo(0,half); tg.lineTo(W,half); tg.stroke();
+  lane(tsClean,'#34d399',half*0.5); lane(tsMic,'#f59e0b',half*1.5);
+  tg.fillStyle='#64748b'; tg.font='10px system-ui'; tg.textAlign='left';
+  tg.fillText(T('clean speech (target talker)','クリーン音声（対象話者）'),6,12);
+  tg.fillText(T('what the mic hears (+ noise + reverb)','マイクが聞く音（＋雑音＋残響）'),6,half+12); }
+
+function loop(time){ stepTS(); drawScene(time||0); drawTS();
+  const b=$('snrBadge');
+  if(P.fi>=0){ const v=Math.round(snrEMA), ok=v>15, mid=v>5; b.textContent='SNR '+v+' dB';
+    b.style.background=ok?'#064e3b':(mid?'#78350f':'#7f1d1d'); b.style.color=ok?'#6ee7b7':(mid?'#fcd34d':'#fca5a5'); }
+  else { b.textContent=T('no target speech','対象発話なし'); b.style.background='#1e293b'; b.style.color='#94a3b8'; }
+  requestAnimationFrame(loop); }
+
+function render(){
+  P=decide(); const s=S();
+  $('vRev').textContent=s.rev.toFixed(2); $('vNoise').textContent=s.noise.toFixed(2); $('vLow').textContent=s.low.toFixed(2);
+  const nm=i=>i>=0?PEOPLE[i].id:'—';
+  $('rAudio').textContent = P.ai<0 ? T('lost — no usable voice direction','消失 — 利用可能な声方向なし')
+    : T(`points at ${nm(P.ai)} (conf ${P.av.toFixed(2)})`+(s.rev>0.5?' — fuzzy (reverb)':'')+(s.noise>0.5?' — weak (noise)':''),
+        `${nm(P.ai)} を指す（信頼度 ${P.av.toFixed(2)}）`+(s.rev>0.5?' — 不明瞭（残響）':'')+(s.noise>0.5?' — 微弱（雑音）':''));
+  $('rVision').textContent = P.vi<0 ? (s.low>0.5?T('too dark to see','暗くて見えない'):T('no moving lips seen','動く口を検出せず'))
+    : T(`sees ${nm(P.vi)} talking (conf ${P.vv.toFixed(2)})`,`${nm(P.vi)} が話すと判定（信頼度 ${P.vv.toFixed(2)}）`);
+  $('rFusion').textContent = P.fi<0 ? T('no active speaker','アクティブ話者なし') : T(`attends to ${nm(P.fi)} ✓`,`${nm(P.fi)} に注目 ✓`);
+  const speakers=PEOPLE.map((p,i)=>i).filter(i=>state[i].spk);
+  const anyLip=PEOPLE.some((p,i)=>state[i].face&&state[i].lip);
+  let why;
+  if(speakers.length===0){ why = anyLip ? T('Lips move but there is no sound — fusion holds off (no false trigger). Vision-only would have fired.','口は動くが音が無い — フュージョンは保留（誤反応なし）。視覚のみなら発火していた。')
+    : T('Quiet scene — nobody is talking, so the robot waits.','静かな場面 — 誰も話さずロボットは待機。'); }
+  else if(speakers.length===1){ const sp=speakers[0], a=audioConf(sp), v=visConf(sp);
+    if(v>0.1 && a<0.25) why=T(`Noise/reverb crushed the audio SNR, but the camera sees ${nm(sp)}'s lips — fusion stays locked. Vision saved it.`,`雑音/残響で音声SNRが低下したが、カメラが ${nm(sp)} の口を捉え、フュージョンは維持。視覚が救った。`);
+    else if(a>0.25 && v<0.1) why=T(`Too dark / face hidden, but the audio direction is clean — fusion attends to ${nm(sp)} on sound alone. Audio covered for vision.`,`暗い/顔が隠れているが音声方向は明瞭 — フュージョンは音だけで ${nm(sp)} に注目。音声が視覚を補完。`);
+    else if(a>0.1 && v>0.1) why=T(`${nm(sp)} talking, confirmed by both ear and eye → high-confidence lock.`,`${nm(sp)} が話し、耳と目の両方が確認 → 高信頼ロック。`);
+    else why=T(`Both senses are weak (heavy noise + darkness) — fusion still leans toward ${nm(sp)}, but with low confidence. Move closer or denoise.`,`両感覚が弱い（強雑音＋暗闇）— フュージョンは ${nm(sp)} に傾くが低信頼。近づくか雑音抑圧を。`);
+  } else { const conf=speakers.filter(i=>visConf(i)>0.1);
+    why = conf.length===1 ? T(`Two people talk at once — audio can't separate them, but the camera sees ${nm(conf[0])}'s lips, so fusion attends to ${nm(conf[0])}.`,`2人同時 — 音声では分離できないが、カメラが ${nm(conf[0])} の口を捉え、フュージョンは ${nm(conf[0])} に注目。`)
+         : T('Several talkers and no clear visual — fusion picks the strongest but stays unsure. A cue to turn the head for a better view.','複数話者で視覚も不明瞭 — 最有力を選ぶが不確か。首を向けて視界を得る合図。'); }
+  $('rWhy').textContent=why;
+}
+
+// ---- language ----
+function setLang(l){ LANG=l; document.body.classList.toggle('lang-en',l==='en'); document.body.classList.toggle('lang-ja',l==='ja'); document.documentElement.lang=l;
+  $('langToggle').checked=(l==='ja'); $('lblEn').classList.toggle('on',l==='en'); $('lblJa').classList.toggle('on',l==='ja');
+  try{ localStorage.setItem('hri-lang',l); }catch(e){} render(); }
+$('langToggle').addEventListener('change',e=>setLang(e.target.checked?'ja':'en'));
+['rev','noise','low'].forEach(id=>$(id).addEventListener('input',render));
+requestAnimationFrame(loop);
+syncChecks();
+let initialLang='en'; try{ const s=localStorage.getItem('hri-lang'); initialLang=s||((navigator.language||'').toLowerCase().startsWith('ja')?'ja':'en'); }catch(e){}
+setLang(initialLang);
+</script>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Designing an Audio System for a Humanoid Robot</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 860px; margin: 40px auto; padding: 0 24px; }
+  h1 { font-size: 28px; border-bottom: 2px solid #444; padding-bottom: 8px; }
+  h2 { font-size: 21px; margin-top: 36px; color: #1a3a5c; border-bottom: 1px solid #dde3e9; padding-bottom: 4px; }
+  h3 { font-size: 16px; margin-top: 22px; color: #333; }
+  p, li, td, th { font-size: 14px; }
+  ul, ol { margin-top: 6px; }
+  code { background: #f2f2f2; padding: 1px 5px; border-radius: 3px; font-family: Consolas, monospace; font-size: 13px; }
+  .meta { color: #666; font-size: 13px; font-style: italic; }
+  .callout { background: #f5f8fb; border-left: 4px solid #1a3a5c; padding: 10px 16px; margin: 16px 0; }
+  .phase { background: #eef2f6; border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #1a3a5c; font-weight: bold; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: #eef2f6; }
+  .toc li { margin: 3px 0; }
+  body.lang-en [lang=ja]{display:none!important}
+  body.lang-ja [lang=en]{display:none!important}
+</style>
+</head>
+<body class="lang-en">
+<div style="display:flex;justify-content:flex-end;gap:6px;padding:8px 12px;font-family:system-ui,sans-serif;">
+  <button id="enBtn" onclick="setLang('en')" style="cursor:pointer;border:1px solid #8888;border-radius:6px;padding:4px 10px;font-size:12px;background:transparent;color:inherit;">EN</button>
+  <button id="jaBtn" onclick="setLang('ja')" style="cursor:pointer;border:1px solid #8888;border-radius:6px;padding:4px 10px;font-size:12px;background:transparent;color:inherit;">日本語</button>
+</div>
+
+<div lang="en">
+
+<h1>Designing an Audio System for a Humanoid Robot</h1>
+<p class="meta">An end-to-end program guide &mdash; from use-case definition and user research through hardware prototyping, algorithm development, integration, and validation.</p>
+
+<div class="callout">
+<strong>How to use this guide:</strong> The work is organized into six phases that map to a typical product-development lifecycle. Phases A&ndash;B establish <em>what</em> to build and <em>why</em>; Phase C turns that into testable requirements; Phases D&ndash;E build the hardware and software in parallel, iterating against tests; Phase F integrates and validates on the real robot. Expect to loop back &mdash; especially from user studies (B) and validation (F) into requirements (C).
+</div>
+
+<h3>Contents</h3>
+<ul class="toc">
+  <li><strong>Phase A</strong> &mdash; Use-case &amp; scenario definitions</li>
+  <li><strong>Phase B</strong> &mdash; User studies &amp; customer feedback</li>
+  <li><strong>Phase C</strong> &mdash; Requirements &amp; success metrics</li>
+  <li><strong>Phase D</strong> &mdash; Hardware prototype builds</li>
+  <li><strong>Phase E</strong> &mdash; Software / algorithm build &amp; test</li>
+  <li><strong>Phase F</strong> &mdash; System integration &amp; validation</li>
+  <li>Appendix &mdash; Reference stack, RACI, open questions</li>
+</ul>
+
+<!-- ============================ PHASE A ============================ -->
+<h2><span class="phase">PHASE A</span> &nbsp;Use-case &amp; scenario definitions</h2>
+<p>Audio requirements are meaningless without concrete scenarios. Define each scenario along the same axes so engineering can size the system and QA can test it. Treat these as living specs.</p>
+
+<h3>A.1 Scenario template</h3>
+<p>For every use case, capture:</p>
+<ul>
+  <li><strong>Actor &amp; intent:</strong> who is speaking and what they want.</li>
+  <li><strong>Distance &amp; geometry:</strong> talker range, angle, seated/standing, single vs. multiple talkers.</li>
+  <li><strong>Acoustic environment:</strong> background noise type and level (dB SPL), reverberation (RT60), competing speech.</li>
+  <li><strong>Robot state:</strong> stationary vs. moving (servo/locomotion noise), speaking vs. silent (barge-in needed?).</li>
+  <li><strong>Success criterion:</strong> what &ldquo;it worked&rdquo; means (e.g., correct intent on first try, head turns to talker within 500&nbsp;ms).</li>
+  <li><strong>Failure handling:</strong> what the robot does when it mis-hears or hears nothing.</li>
+</ul>
+
+<h3>A.2 Example scenario catalog</h3>
+<table>
+  <tr><th>Scenario</th><th>Range / talkers</th><th>Environment</th><th>Key audio demand</th></tr>
+  <tr><td>Close-up assistant (face-to-face)</td><td>0.5&ndash;1&nbsp;m, single</td><td>Quiet&ndash;moderate (40&ndash;55&nbsp;dB)</td><td>Low latency, natural barge-in</td></tr>
+  <tr><td>Across-the-room command</td><td>3&ndash;5&nbsp;m, single</td><td>Home/office (50&ndash;65&nbsp;dB)</td><td>Far-field beamforming, DoA + head turn</td></tr>
+  <tr><td>Group / multi-party</td><td>1&ndash;3&nbsp;m, 2&ndash;4 talkers</td><td>Moderate, overlapping speech</td><td>Speaker localization, turn-taking</td></tr>
+  <tr><td>Public / retail kiosk</td><td>0.5&ndash;2&nbsp;m, single + crowd babble</td><td>Noisy (65&ndash;80&nbsp;dB)</td><td>Aggressive noise suppression, wake word robustness</td></tr>
+  <tr><td>Robot-in-motion</td><td>1&ndash;3&nbsp;m, single</td><td>Self-noise from servos/locomotion</td><td>Ego-noise cancellation, mic gating</td></tr>
+  <tr><td>Alert / safety call-out</td><td>any</td><td>any</td><td>Reliable keyword spotting, loud clear TTS output</td></tr>
+</table>
+
+<h3>A.3 Prioritization</h3>
+<p>Rank scenarios by frequency &times; business value &times; technical risk. Pick a <strong>primary scenario</strong> that the v1 system must nail, and a short list of secondary scenarios it should tolerate. This prevents over-engineering for edge cases too early.</p>
+
+<!-- ============================ PHASE B ============================ -->
+<h2><span class="phase">PHASE B</span> &nbsp;User studies &amp; customer feedback</h2>
+<p>Audio &ldquo;quality&rdquo; is ultimately perceptual &mdash; numbers like SNR don't guarantee a good experience. Run user research early and continuously.</p>
+
+<h3>B.1 Research methods by stage</h3>
+<table>
+  <tr><th>Stage</th><th>Method</th><th>What you learn</th></tr>
+  <tr><td>Discovery</td><td>Interviews, contextual inquiry, surveys</td><td>Real environments, accents, expectations, deal-breakers</td></tr>
+  <tr><td>Concept</td><td>Wizard-of-Oz (human drives responses behind the robot)</td><td>Desired interaction style, latency tolerance, social comfort &mdash; before any algorithm exists</td></tr>
+  <tr><td>Prototype</td><td>Moderated usability sessions, task success tests</td><td>Where recognition breaks, friction in turn-taking, TTS naturalness</td></tr>
+  <tr><td>Beta / field</td><td>Diary studies, telemetry, in-product feedback prompts</td><td>Long-tail failures in the wild, drift over time</td></tr>
+</table>
+
+<h3>B.2 What to measure with users</h3>
+<ul>
+  <li><strong>Task success rate</strong> and <strong>number of retries</strong> to complete an intent.</li>
+  <li><strong>Perceived latency</strong> and conversational comfort (e.g., SUS, custom Likert scales).</li>
+  <li><strong>TTS naturalness &amp; intelligibility</strong> (MOS &mdash; Mean Opinion Score).</li>
+  <li><strong>Trust &amp; social acceptability</strong> &mdash; does barge-in feel rude? Does the robot interrupt well?</li>
+  <li><strong>Failure perception</strong> &mdash; do users understand <em>why</em> it didn't hear them?</li>
+</ul>
+
+<h3>B.3 Data collection &amp; the feedback loop</h3>
+<ul>
+  <li>Record (with consent) real far-field audio in target environments &mdash; this becomes your <strong>evaluation corpus</strong> for Phase E.</li>
+  <li>Capture demographic/acoustic diversity: accents, ages, voice pitches, languages.</li>
+  <li>Tag failures by root cause (didn't trigger wake word, ASR error, intent error, TTS unclear) so feedback routes to the right team.</li>
+  <li>Feed findings back into the scenario catalog (A) and requirements (C). Close the loop every cycle.</li>
+</ul>
+
+<div class="callout"><strong>Privacy note:</strong> Voice data is sensitive. Establish consent, retention limits, on-device anonymization, and a clear data-governance policy before recording anyone.</div>
+
+<!-- ============================ PHASE C ============================ -->
+<h2><span class="phase">PHASE C</span> &nbsp;Requirements &amp; success metrics</h2>
+<p>Translate scenarios (A) and user findings (B) into <strong>measurable, testable</strong> requirements. Each should have a target number and a test method.</p>
+
+<h3>C.1 Functional &amp; performance targets (examples)</h3>
+<table>
+  <tr><th>Requirement</th><th>Example target</th><th>How measured</th></tr>
+  <tr><td>End-to-end latency (speech&rarr;reply audio)</td><td>&lt; 700&nbsp;ms typical, &lt; 1.5&nbsp;s max</td><td>Timestamped pipeline logging</td></tr>
+  <tr><td>Far-field word error rate (WER)</td><td>&lt; 10% at 3&nbsp;m, 60&nbsp;dB noise</td><td>Eval corpus playback in target room</td></tr>
+  <tr><td>Wake-word false accepts / rejects</td><td>&lt; 1 FA/hr; &lt; 3% FR</td><td>24&nbsp;h noise soak + scripted triggers</td></tr>
+  <tr><td>DoA accuracy</td><td>&plusmn; 10&deg;</td><td>Loudspeaker at known angles</td></tr>
+  <tr><td>Barge-in success</td><td>&gt; 95% while robot speaking</td><td>Scripted interruptions during TTS</td></tr>
+  <tr><td>TTS intelligibility</td><td>MOS &ge; 4.0</td><td>User listening panel</td></tr>
+</table>
+
+<h3>C.2 Constraints budget</h3>
+<ul>
+  <li><strong>Compute:</strong> CPU/GPU/NPU headroom, model size limits.</li>
+  <li><strong>Power &amp; thermal:</strong> always-on wake-word draw; DSP load while listening.</li>
+  <li><strong>Cost &amp; BOM:</strong> mic count, DSP chip, amplifier.</li>
+  <li><strong>Onboard vs. cloud:</strong> driven by privacy, connectivity, and latency.</li>
+</ul>
+
+<!-- ============================ PHASE D ============================ -->
+<h2><span class="phase">PHASE D</span> &nbsp;Hardware prototype builds</h2>
+<p>Iterate hardware in escalating fidelity. Don't jump to a custom PCB before the acoustics are proven on a breadboard.</p>
+
+<h3>D.1 Prototype ladder</h3>
+<table>
+  <tr><th>Stage</th><th>Build</th><th>Goal</th></tr>
+  <tr><td>P0 &mdash; Benchtop</td><td>Off-the-shelf array (ReSpeaker/XMOS dev kit) + USB amp/speaker on a desk</td><td>Prove the algorithm pipeline end-to-end, fast</td></tr>
+  <tr><td>P1 &mdash; Acoustic mockup</td><td>Mics &amp; speaker placed in a head-shaped shell / robot mock</td><td>Validate placement, echo path, vibration coupling</td></tr>
+  <tr><td>P2 &mdash; Integrated proto</td><td>Custom mic-array PCB, chosen DSP, amp, in the real chassis with servos running</td><td>Measure self-noise, thermal, EMI under realistic motion</td></tr>
+  <tr><td>P3 &mdash; DVT/pre-production</td><td>Production-intent components &amp; layout</td><td>Manufacturability, unit-to-unit consistency, calibration</td></tr>
+</table>
+
+<h3>D.2 Hardware engineering focus areas</h3>
+<ul>
+  <li><strong>Mic array:</strong> count, geometry (fixed, documented spacing), MEMS part selection (SNR &ge; 64&nbsp;dB), I&sup2;S/PDM routing, clock distribution.</li>
+  <li><strong>Mechanical isolation:</strong> gaskets/grommets to block structure-borne servo &amp; fan vibration; acoustic ports tuned, not just drilled holes.</li>
+  <li><strong>Speaker/echo path:</strong> physically separate mics from the speaker; sealed enclosure for the driver.</li>
+  <li><strong>Amplifier &amp; power:</strong> Class-D sized to loudness target; clean power rails to avoid noise injection into mics.</li>
+  <li><strong>EMI &amp; ground:</strong> keep motor drivers and digital noise off the analog/mic domain.</li>
+</ul>
+
+<h3>D.3 Hardware bring-up tests</h3>
+<ul>
+  <li>Per-mic frequency response &amp; sensitivity matching; reject out-of-spec channels.</li>
+  <li>Self-noise floor with servos idle vs. moving (ego-noise characterization).</li>
+  <li>Echo path measurement (speaker&rarr;mic coupling) to spec the AEC.</li>
+  <li>Array calibration: phase/gain alignment for beamforming &amp; DoA.</li>
+</ul>
+
+<!-- ============================ PHASE E ============================ -->
+<h2><span class="phase">PHASE E</span> &nbsp;Software / algorithm build &amp; test</h2>
+<p>Build the signal chain and ML components incrementally, each with its own test harness and the evaluation corpus from Phase B. Develop in parallel with hardware using recorded/simulated data so software isn't blocked on the chassis.</p>
+
+<h3>E.1 The audio front-end DSP pipeline</h3>
+<ol>
+  <li><strong>Acoustic Echo Cancellation (AEC)</strong> &mdash; subtract the robot's own playback so it can hear while speaking (barge-in).</li>
+  <li><strong>Beamforming</strong> &mdash; steer the array toward the talker to raise SNR.</li>
+  <li><strong>Noise suppression / dereverberation</strong> &mdash; stationary NR plus optional neural denoiser (RNNoise or small DNN); add <strong>ego-noise cancellation</strong> for servo noise.</li>
+  <li><strong>Automatic Gain Control (AGC).</strong></li>
+  <li><strong>Direction-of-Arrival (DoA)</strong> &mdash; GCC-PHAT or MUSIC for speaker angle &rarr; head tracking.</li>
+</ol>
+<p><strong>Build options:</strong> WebRTC Audio Processing (AEC/NS/AGC), Speex DSP, a vendor SDK, or a hardware DSP (XMOS XVF: AEC + beamforming + wake word in silicon).</p>
+
+<h3>E.2 Recognition &amp; interaction stack</h3>
+<ul>
+  <li><strong>VAD:</strong> Silero or WebRTC VAD to gate the pipeline.</li>
+  <li><strong>Wake word:</strong> openWakeWord, Picovoice Porcupine, or a custom small model; always-on, low-power.</li>
+  <li><strong>ASR/STT:</strong> on-device (faster-whisper, Vosk, Riva) or cloud (Deepgram, Google); use streaming for conversation.</li>
+  <li><strong>Dialog/reasoning:</strong> intent parser or LLM; stream the response so TTS can start early.</li>
+  <li><strong>TTS:</strong> Piper/Coqui on-device or ElevenLabs/Azure in cloud; stream playback on the first chunk.</li>
+</ul>
+
+<h3>E.3 Test strategy (per component and end-to-end)</h3>
+<table>
+  <tr><th>Level</th><th>Method</th></tr>
+  <tr><td>Unit / offline</td><td>Replay the eval corpus through each block; measure WER, SNR gain, echo return loss enhancement (ERLE), DoA error against ground truth.</td></tr>
+  <tr><td>Simulation</td><td>Convolve clean speech with room impulse responses + injected noise/ego-noise to expand coverage cheaply.</td></tr>
+  <tr><td>Hardware-in-the-loop</td><td>Run on the P1/P2 proto in a real/anechoic/reverberant room with a loudspeaker talker rig at known angles &amp; distances.</td></tr>
+  <tr><td>Regression</td><td>Automated test set run on every build; gate merges on metric thresholds from Phase C.</td></tr>
+  <tr><td>A/B &amp; user tests</td><td>Compare algorithm variants with the Phase B panels for perceptual metrics (MOS, comfort).</td></tr>
+</table>
+
+<h3>E.4 Latency engineering</h3>
+<ul>
+  <li>Budget latency per stage and log timestamps end-to-end.</li>
+  <li>Use streaming everywhere (ASR partials, streamed LLM tokens, chunked TTS).</li>
+  <li>Overlap stages where safe; start TTS on the first sentence rather than the full reply.</li>
+</ul>
+
+<!-- ============================ PHASE F ============================ -->
+<h2><span class="phase">PHASE F</span> &nbsp;System integration &amp; validation</h2>
+
+<h3>F.1 Middleware &amp; integration</h3>
+<ul>
+  <li><strong>Middleware:</strong> ROS&nbsp;2 nodes/topics (<code>audio_in</code>, <code>vad_state</code>, <code>transcript</code>, <code>tts_request</code>, <code>doa_angle</code>).</li>
+  <li><strong>Motion coordination:</strong> duck/gate mics during loud movement; turn head toward the DoA estimate.</li>
+  <li><strong>Interaction state machine:</strong> listening / thinking / speaking, with clean barge-in handling.</li>
+</ul>
+
+<h3>F.2 System validation</h3>
+<ul>
+  <li>Run the full scenario catalog (A) against the requirement targets (C).</li>
+  <li>Far-field WER, barge-in success, DoA accuracy, latency &mdash; on the real robot, in motion.</li>
+  <li>Ego-noise stress: validate while servos/locomotion are active.</li>
+  <li>Soak &amp; reliability: long-duration wake-word false-accept testing.</li>
+  <li><strong>Field trials</strong> in the actual deployment environment &mdash; lab numbers always look better.</li>
+</ul>
+
+<h3>F.3 Acceptance &amp; iteration</h3>
+<p>Ship the primary scenario when it meets targets; track secondary scenarios as known limitations. Route field telemetry and user feedback (B) back into requirements (C) for the next cycle.</p>
+
+<!-- ============================ APPENDIX ============================ -->
+<h2>Appendix</h2>
+
+<h3>Reference starting stack</h3>
+<table>
+  <tr><th>Stage</th><th>Suggested component</th></tr>
+  <tr><td>Mic array + front-end DSP</td><td>ReSpeaker / XMOS XVF array with AEC + beamforming</td></tr>
+  <tr><td>VAD</td><td>Silero VAD</td></tr>
+  <tr><td>Wake word</td><td>openWakeWord</td></tr>
+  <tr><td>ASR</td><td>faster-whisper (streaming)</td></tr>
+  <tr><td>Dialog</td><td>LLM or intent parser (streamed)</td></tr>
+  <tr><td>TTS</td><td>Piper (streaming playback)</td></tr>
+  <tr><td>Amp / output</td><td>Class-D amp + small sealed enclosure</td></tr>
+  <tr><td>Orchestration</td><td>ROS&nbsp;2 on Jetson (or similar)</td></tr>
+</table>
+
+<h3>Suggested team RACI (lightweight)</h3>
+<table>
+  <tr><th>Phase</th><th>Lead</th><th>Supporting</th></tr>
+  <tr><td>A &mdash; Scenarios</td><td>Product / PM</td><td>UX research, audio eng</td></tr>
+  <tr><td>B &mdash; User studies</td><td>UX research</td><td>Product, data</td></tr>
+  <tr><td>C &mdash; Requirements</td><td>Audio systems eng</td><td>Product, ML, HW</td></tr>
+  <tr><td>D &mdash; HW prototypes</td><td>HW / acoustics eng</td><td>Mechanical, EE</td></tr>
+  <tr><td>E &mdash; SW / algorithms</td><td>DSP / ML eng</td><td>Audio systems, infra</td></tr>
+  <tr><td>F &mdash; Integration &amp; validation</td><td>Systems / robotics eng</td><td>QA, all teams</td></tr>
+</table>
+
+<div class="callout">
+<strong>Open questions to finalize your design:</strong>
+<ul>
+  <li>Compute platform (Jetson, Raspberry Pi, x86, microcontroller)?</li>
+  <li>Onboard or cloud for ASR/TTS?</li>
+  <li>Primary scenario &amp; range (close conversation vs. far-field vs. noisy public)?</li>
+  <li>Building custom hardware, or integrating an existing array?</li>
+  <li>Target languages/accents and privacy constraints for voice data?</li>
+</ul>
+</div>
+
+</div>
+
+<div lang="ja">
+
+<h1>ヒューマノイドロボット向けオーディオシステムの設計</h1>
+<p class="meta">エンドツーエンドのプログラムガイド &mdash; ユースケースの定義とユーザーリサーチから、ハードウェアの試作、アルゴリズム開発、統合、検証まで。</p>
+
+<div class="callout">
+<strong>このガイドの使い方:</strong> 作業は、一般的な製品開発ライフサイクルに対応した6つのフェーズに整理されています。フェーズA&ndash;Bでは<em>何を</em>作るか、<em>なぜ</em>作るかを確立します。フェーズCはそれをテスト可能な要件に変換します。フェーズD&ndash;Eではハードウェアとソフトウェアを並行して構築し、テストに対して反復します。フェーズFでは実機のロボット上で統合と検証を行います。ループバックは想定しておいてください &mdash; 特にユーザー調査(B)と検証(F)から要件(C)へのフィードバックが発生します。
+</div>
+
+<h3 id="Contents-ja">目次</h3>
+<ul class="toc">
+  <li><strong>フェーズA</strong> &mdash; ユースケース &amp; シナリオの定義</li>
+  <li><strong>フェーズB</strong> &mdash; ユーザー調査 &amp; 顧客フィードバック</li>
+  <li><strong>フェーズC</strong> &mdash; 要件 &amp; 成功指標</li>
+  <li><strong>フェーズD</strong> &mdash; ハードウェア試作の構築</li>
+  <li><strong>フェーズE</strong> &mdash; ソフトウェア / アルゴリズムの構築 &amp; テスト</li>
+  <li><strong>フェーズF</strong> &mdash; システム統合 &amp; 検証</li>
+  <li>付録 &mdash; リファレンススタック、RACI、未解決の課題</li>
+</ul>
+
+<!-- ============================ PHASE A ============================ -->
+<h2><span class="phase">PHASE A</span> &nbsp;ユースケース &amp; シナリオの定義</h2>
+<p>オーディオ要件は、具体的なシナリオがなければ意味を持ちません。エンジニアリングがシステムを見積もり、QAがテストできるよう、各シナリオを同じ軸で定義します。これらは生きた仕様として扱ってください。</p>
+
+<h3 id="A.1-ja">A.1 シナリオテンプレート</h3>
+<p>すべてのユースケースについて、次の項目を記述します:</p>
+<ul>
+  <li><strong>話者 &amp; 意図:</strong> 誰が話しており、何を求めているか。</li>
+  <li><strong>距離 &amp; 配置:</strong> 話者までの距離、角度、着席/起立、単独話者か複数話者か。</li>
+  <li><strong>音響環境:</strong> 背景雑音の種類とレベル(dB SPL)、残響(RT60)、競合する音声。</li>
+  <li><strong>ロボットの状態:</strong> 静止中か移動中か(サーボ/歩行のノイズ)、発話中か無音か(バージインは必要か?)。</li>
+  <li><strong>成功基準:</strong> 「うまくいった」とは何を意味するか(例: 初回で正しい意図を認識、500&nbsp;ms以内に頭部を話者へ向ける)。</li>
+  <li><strong>失敗時の処理:</strong> 聞き間違えたとき、または何も聞こえなかったときにロボットが取る動作。</li>
+</ul>
+
+<h3 id="A.2-ja">A.2 シナリオカタログの例</h3>
+<table>
+  <tr><th>シナリオ</th><th>距離 / 話者数</th><th>環境</th><th>主要なオーディオ要求</th></tr>
+  <tr><td>近接アシスタント(対面)</td><td>0.5&ndash;1&nbsp;m、単独</td><td>静か&ndash;中程度(40&ndash;55&nbsp;dB)</td><td>低レイテンシ、自然なバージイン</td></tr>
+  <tr><td>部屋越しのコマンド</td><td>3&ndash;5&nbsp;m、単独</td><td>家庭/オフィス(50&ndash;65&nbsp;dB)</td><td>遠方界ビームフォーミング、DoA + 頭部の旋回</td></tr>
+  <tr><td>グループ / 複数人</td><td>1&ndash;3&nbsp;m、2&ndash;4名の話者</td><td>中程度、重複する音声</td><td>話者の定位、ターンテイキング</td></tr>
+  <tr><td>公共 / 小売キオスク</td><td>0.5&ndash;2&nbsp;m、単独 + 群衆のざわめき</td><td>騒がしい(65&ndash;80&nbsp;dB)</td><td>強力なノイズ抑制、ウェイクワードのロバスト性</td></tr>
+  <tr><td>移動中のロボット</td><td>1&ndash;3&nbsp;m、単独</td><td>サーボ/歩行による自己ノイズ</td><td>エゴノイズキャンセル、マイクゲーティング</td></tr>
+  <tr><td>警報 / 安全のための呼びかけ</td><td>任意</td><td>任意</td><td>確実なキーワードスポッティング、大きく明瞭なTTS出力</td></tr>
+</table>
+
+<h3 id="A.3-ja">A.3 優先順位付け</h3>
+<p>シナリオを 頻度 &times; ビジネス価値 &times; 技術的リスク でランク付けします。v1システムが確実に達成すべき<strong>主要シナリオ</strong>を1つ選び、許容できればよい二次シナリオの短いリストを定めます。これにより、早い段階でエッジケース向けに過剰設計することを防げます。</p>
+
+<!-- ============================ PHASE B ============================ -->
+<h2><span class="phase">PHASE B</span> &nbsp;ユーザー調査 &amp; 顧客フィードバック</h2>
+<p>オーディオの「品質」は最終的には知覚的なものです &mdash; SNRのような数値だけでは良い体験は保証されません。ユーザーリサーチは早期から継続的に実施してください。</p>
+
+<h3 id="B.1-ja">B.1 段階別のリサーチ手法</h3>
+<table>
+  <tr><th>段階</th><th>手法</th><th>得られる知見</th></tr>
+  <tr><td>ディスカバリー</td><td>インタビュー、文脈的調査(コンテキストインクワイアリ)、アンケート</td><td>実際の環境、アクセント、期待、許容できない要素</td></tr>
+  <tr><td>コンセプト</td><td>オズの魔法使い法(人間がロボットの背後で応答を操作する)</td><td>望ましいインタラクションスタイル、レイテンシ許容度、社会的な快適さ &mdash; アルゴリズムが存在する前の段階で</td></tr>
+  <tr><td>プロトタイプ</td><td>モデレート付きユーザビリティセッション、タスク成功テスト</td><td>認識が破綻する箇所、ターンテイキングの摩擦、TTSの自然さ</td></tr>
+  <tr><td>ベータ / フィールド</td><td>日記調査、テレメトリ、製品内フィードバックプロンプト</td><td>実環境でのロングテール障害、時間経過によるドリフト</td></tr>
+</table>
+
+<h3 id="B.2-ja">B.2 ユーザーで測定すべきこと</h3>
+<ul>
+  <li><strong>タスク成功率</strong>、および意図を完了するまでの<strong>リトライ回数</strong>。</li>
+  <li><strong>体感レイテンシ</strong>と会話の快適さ(例: SUS、独自のリッカート尺度)。</li>
+  <li><strong>TTSの自然さ &amp; 明瞭度</strong>(MOS &mdash; 平均オピニオン評点)。</li>
+  <li><strong>信頼 &amp; 社会的受容性</strong> &mdash; バージインは失礼に感じられるか? ロボットはうまく割り込めているか?</li>
+  <li><strong>失敗の受け止め方</strong> &mdash; ユーザーは<em>なぜ</em>聞き取ってもらえなかったのかを理解できるか?</li>
+</ul>
+
+<h3 id="B.3-ja">B.3 データ収集 &amp; フィードバックループ</h3>
+<ul>
+  <li>(同意を得た上で)対象環境での実際の遠方界オーディオを録音します &mdash; これがフェーズEの<strong>評価コーパス</strong>になります。</li>
+  <li>人口統計的/音響的な多様性を確保します: アクセント、年齢、声の高さ、言語。</li>
+  <li>失敗を根本原因(ウェイクワードが反応しない、ASRエラー、意図エラー、TTSが不明瞭)でタグ付けし、フィードバックが適切なチームに届くようにします。</li>
+  <li>知見をシナリオカタログ(A)と要件(C)に反映します。サイクルごとにループを閉じてください。</li>
+</ul>
+
+<div class="callout"><strong>プライバシーに関する注意:</strong> 音声データは機微情報です。誰かを録音する前に、同意、保持期限、オンデバイスでの匿名化、明確なデータガバナンスポリシーを確立してください。</div>
+
+<!-- ============================ PHASE C ============================ -->
+<h2><span class="phase">PHASE C</span> &nbsp;要件 &amp; 成功指標</h2>
+<p>シナリオ(A)とユーザー調査の知見(B)を、<strong>測定可能でテスト可能な</strong>要件に変換します。各要件には目標数値とテスト方法を持たせます。</p>
+
+<h3 id="C.1-ja">C.1 機能 &amp; 性能目標(例)</h3>
+<table>
+  <tr><th>要件</th><th>目標値の例</th><th>測定方法</th></tr>
+  <tr><td>エンドツーエンドのレイテンシ(発話&rarr;応答音声)</td><td>通常 &lt; 700&nbsp;ms、最大 &lt; 1.5&nbsp;s</td><td>タイムスタンプ付きパイプラインロギング</td></tr>
+  <tr><td>遠方界の単語誤り率(WER)</td><td>3&nbsp;m、60&nbsp;dBノイズで &lt; 10%</td><td>対象部屋での評価コーパス再生</td></tr>
+  <tr><td>ウェイクワードの誤受理 / 誤棄却</td><td>&lt; 1 FA/hr; &lt; 3% FR</td><td>24&nbsp;hノイズソーク + スクリプト化されたトリガー</td></tr>
+  <tr><td>DoA精度</td><td>&plusmn; 10&deg;</td><td>既知の角度に配置したラウドスピーカー</td></tr>
+  <tr><td>バージイン成功率</td><td>ロボット発話中に &gt; 95%</td><td>TTS中のスクリプト化された割り込み</td></tr>
+  <tr><td>TTSの明瞭度</td><td>MOS &ge; 4.0</td><td>ユーザー試聴パネル</td></tr>
+</table>
+
+<h3 id="C.2-ja">C.2 制約バジェット</h3>
+<ul>
+  <li><strong>計算資源:</strong> CPU/GPU/NPUのヘッドルーム、モデルサイズの上限。</li>
+  <li><strong>電力 &amp; 熱:</strong> 常時オンのウェイクワードの消費、リスニング中のDSP負荷。</li>
+  <li><strong>コスト &amp; BOM:</strong> マイク数、DSPチップ、アンプ。</li>
+  <li><strong>オンボード vs. クラウド:</strong> プライバシー、接続性、レイテンシによって決まる。</li>
+</ul>
+
+<!-- ============================ PHASE D ============================ -->
+<h2><span class="phase">PHASE D</span> &nbsp;ハードウェア試作の構築</h2>
+<p>ハードウェアは忠実度を段階的に高めながら反復します。音響特性がブレッドボード上で実証される前に、カスタムPCBへ飛びつかないでください。</p>
+
+<h3 id="D.1-ja">D.1 試作のはしご</h3>
+<table>
+  <tr><th>段階</th><th>構築物</th><th>目標</th></tr>
+  <tr><td>P0 &mdash; ベンチトップ</td><td>市販のアレイ(ReSpeaker/XMOS開発キット) + USBアンプ/スピーカーを机上に</td><td>アルゴリズムのパイプラインをエンドツーエンドで素早く実証する</td></tr>
+  <tr><td>P1 &mdash; 音響モックアップ</td><td>頭部形状のシェル / ロボットモックにマイク &amp; スピーカーを配置</td><td>配置、エコー経路、振動結合を検証する</td></tr>
+  <tr><td>P2 &mdash; 統合プロト</td><td>カスタムマイクアレイPCB、選定したDSP、アンプを、サーボ稼働中の実機シャーシに搭載</td><td>現実的な動作下での自己ノイズ、熱、EMIを測定する</td></tr>
+  <tr><td>P3 &mdash; DVT/量産前</td><td>量産想定の部品 &amp; レイアウト</td><td>製造性、個体間のばらつき、キャリブレーション</td></tr>
+</table>
+
+<h3 id="D.2-ja">D.2 ハードウェアエンジニアリングの重点領域</h3>
+<ul>
+  <li><strong>マイクアレイ:</strong> 数、ジオメトリ(固定され、文書化された間隔)、MEMS部品の選定(SNR &ge; 64&nbsp;dB)、I&sup2;S/PDMルーティング、クロック分配。</li>
+  <li><strong>機械的アイソレーション:</strong> 構造伝搬するサーボ &amp; ファンの振動を遮断するガスケット/グロメット。音響ポートは単に穴を開けるのではなくチューニングする。</li>
+  <li><strong>スピーカー/エコー経路:</strong> マイクをスピーカーから物理的に分離。ドライバーは密閉エンクロージャに。</li>
+  <li><strong>アンプ &amp; 電源:</strong> 音量目標に合わせてサイズ選定したClass-D。マイクへのノイズ注入を避けるためクリーンな電源レール。</li>
+  <li><strong>EMI &amp; グラウンド:</strong> モータードライバとデジタルノイズをアナログ/マイク領域から遠ざける。</li>
+</ul>
+
+<h3 id="D.3-ja">D.3 ハードウェアの立ち上げテスト</h3>
+<ul>
+  <li>マイクごとの周波数応答 &amp; 感度マッチング。規格外のチャンネルは排除する。</li>
+  <li>サーボ停止時 vs. 動作時の自己ノイズフロア(エゴノイズの特性評価)。</li>
+  <li>エコー経路の測定(スピーカー&rarr;マイクの結合)。AECの仕様策定のため。</li>
+  <li>アレイのキャリブレーション: ビームフォーミング &amp; DoAのための位相/ゲイン整合。</li>
+</ul>
+
+<!-- ============================ PHASE E ============================ -->
+<h2><span class="phase">PHASE E</span> &nbsp;ソフトウェア / アルゴリズムの構築 &amp; テスト</h2>
+<p>信号チェーンとMLコンポーネントを、それぞれ独自のテストハーネスとフェーズBの評価コーパスを用いて段階的に構築します。録音/シミュレーションデータを使ってハードウェアと並行して開発し、ソフトウェアがシャーシでブロックされないようにします。</p>
+
+<h3 id="E.1-ja">E.1 オーディオフロントエンドのDSPパイプライン</h3>
+<ol>
+  <li><strong>音響エコーキャンセル(AEC)</strong> &mdash; ロボット自身の再生音を減算し、発話中でも聞き取れるようにする(バージイン)。</li>
+  <li><strong>ビームフォーミング</strong> &mdash; アレイを話者方向に向け、SNRを高める。</li>
+  <li><strong>ノイズ抑制 / 残響除去</strong> &mdash; 定常NRに加え、オプションでニューラルデノイザー(RNNoiseまたは小型DNN)。サーボノイズには<strong>エゴノイズキャンセル</strong>を追加。</li>
+  <li><strong>自動ゲイン制御(AGC)。</strong></li>
+  <li><strong>到来方向(DoA)</strong> &mdash; 話者の角度を求めるGCC-PHATまたはMUSIC &rarr; ヘッドトラッキング。</li>
+</ol>
+<p><strong>構築の選択肢:</strong> WebRTC Audio Processing(AEC/NS/AGC)、Speex DSP、ベンダーSDK、またはハードウェアDSP(XMOS XVF: AEC + ビームフォーミング + ウェイクワードをシリコンで実現)。</p>
+
+<h3 id="E.2-ja">E.2 認識 &amp; インタラクションのスタック</h3>
+<ul>
+  <li><strong>VAD:</strong> パイプラインをゲートするためのSileroまたはWebRTC VAD。</li>
+  <li><strong>ウェイクワード:</strong> openWakeWord、Picovoice Porcupine、またはカスタム小型モデル。常時オン、低消費電力。</li>
+  <li><strong>ASR/STT:</strong> オンデバイス(faster-whisper、Vosk、Riva)またはクラウド(Deepgram、Google)。会話にはストリーミングを使用。</li>
+  <li><strong>対話/推論:</strong> 意図パーサーまたはLLM。応答をストリーミングしてTTSを早期に開始できるようにする。</li>
+  <li><strong>TTS:</strong> オンデバイスのPiper/Coqui、またはクラウドのElevenLabs/Azure。最初のチャンクで再生をストリーミング開始。</li>
+</ul>
+
+<h3 id="E.3-ja">E.3 テスト戦略(コンポーネントごと、およびエンドツーエンド)</h3>
+<table>
+  <tr><th>レベル</th><th>手法</th></tr>
+  <tr><td>ユニット / オフライン</td><td>評価コーパスを各ブロックに再生入力し、WER、SNRゲイン、エコーリターンロスエンハンスメント(ERLE)、グラウンドトゥルースに対するDoA誤差を測定する。</td></tr>
+  <tr><td>シミュレーション</td><td>クリーンな音声を室内インパルス応答 + 注入したノイズ/エゴノイズと畳み込み、カバレッジを低コストで拡張する。</td></tr>
+  <tr><td>ハードウェアインザループ</td><td>既知の角度 &amp; 距離にラウドスピーカーの話者リグを置いた実環境/無響室/残響室で、P1/P2プロト上で実行する。</td></tr>
+  <tr><td>リグレッション</td><td>ビルドごとに自動テストセットを実行。フェーズCの指標しきい値でマージをゲートする。</td></tr>
+  <tr><td>A/B &amp; ユーザーテスト</td><td>知覚的指標(MOS、快適さ)についてフェーズBのパネルでアルゴリズムのバリアントを比較する。</td></tr>
+</table>
+
+<h3 id="E.4-ja">E.4 レイテンシエンジニアリング</h3>
+<ul>
+  <li>ステージごとにレイテンシバジェットを設定し、エンドツーエンドでタイムスタンプをログ記録する。</li>
+  <li>あらゆる箇所でストリーミングを使用する(ASRの部分結果、ストリームされるLLMトークン、チャンク化されたTTS)。</li>
+  <li>安全な箇所ではステージをオーバーラップさせる。応答全体ではなく最初の文でTTSを開始する。</li>
+</ul>
+
+<!-- ============================ PHASE F ============================ -->
+<h2><span class="phase">PHASE F</span> &nbsp;システム統合 &amp; 検証</h2>
+
+<h3 id="F.1-ja">F.1 ミドルウェア &amp; 統合</h3>
+<ul>
+  <li><strong>ミドルウェア:</strong> ROS&nbsp;2のノード/トピック(<code>audio_in</code>、<code>vad_state</code>、<code>transcript</code>、<code>tts_request</code>、<code>doa_angle</code>)。</li>
+  <li><strong>動作との協調:</strong> 大きな動作中はマイクをダック/ゲートする。DoA推定方向へ頭部を向ける。</li>
+  <li><strong>インタラクションのステートマシン:</strong> リスニング / 思考中 / 発話中。クリーンなバージイン処理を伴う。</li>
+</ul>
+
+<h3 id="F.2-ja">F.2 システム検証</h3>
+<ul>
+  <li>シナリオカタログ全体(A)を要件目標(C)に対して実行する。</li>
+  <li>遠方界WER、バージイン成功率、DoA精度、レイテンシ &mdash; 実機のロボットで、移動中に。</li>
+  <li>エゴノイズストレス: サーボ/歩行が稼働している状態で検証する。</li>
+  <li>ソーク &amp; 信頼性: 長時間のウェイクワード誤受理テスト。</li>
+  <li>実際の展開環境での<strong>フィールドトライアル</strong> &mdash; ラボの数値は常に良く見えるものです。</li>
+</ul>
+
+<h3 id="F.3-ja">F.3 受け入れ &amp; 反復</h3>
+<p>主要シナリオが目標を満たしたら出荷します。二次シナリオは既知の制限として追跡します。フィールドテレメトリとユーザーフィードバック(B)を次のサイクルの要件(C)に戻します。</p>
+
+<!-- ============================ APPENDIX ============================ -->
+<h2>付録</h2>
+
+<h3 id="reference-stack-ja">リファレンスの出発スタック</h3>
+<table>
+  <tr><th>段階</th><th>推奨コンポーネント</th></tr>
+  <tr><td>マイクアレイ + フロントエンドDSP</td><td>AEC + ビームフォーミング付きのReSpeaker / XMOS XVFアレイ</td></tr>
+  <tr><td>VAD</td><td>Silero VAD</td></tr>
+  <tr><td>ウェイクワード</td><td>openWakeWord</td></tr>
+  <tr><td>ASR</td><td>faster-whisper(ストリーミング)</td></tr>
+  <tr><td>対話</td><td>LLMまたは意図パーサー(ストリーミング)</td></tr>
+  <tr><td>TTS</td><td>Piper(再生ストリーミング)</td></tr>
+  <tr><td>アンプ / 出力</td><td>Class-Dアンプ + 小型密閉エンクロージャ</td></tr>
+  <tr><td>オーケストレーション</td><td>Jetson上のROS&nbsp;2(または同等品)</td></tr>
+</table>
+
+<h3 id="raci-ja">推奨チームRACI(軽量版)</h3>
+<table>
+  <tr><th>フェーズ</th><th>主担当(Lead)</th><th>支援(Supporting)</th></tr>
+  <tr><td>A &mdash; シナリオ</td><td>プロダクト / PM</td><td>UXリサーチ、オーディオエンジニア</td></tr>
+  <tr><td>B &mdash; ユーザー調査</td><td>UXリサーチ</td><td>プロダクト、データ</td></tr>
+  <tr><td>C &mdash; 要件</td><td>オーディオシステムエンジニア</td><td>プロダクト、ML、HW</td></tr>
+  <tr><td>D &mdash; HW試作</td><td>HW / 音響エンジニア</td><td>メカニカル、EE</td></tr>
+  <tr><td>E &mdash; SW / アルゴリズム</td><td>DSP / MLエンジニア</td><td>オーディオシステム、インフラ</td></tr>
+  <tr><td>F &mdash; 統合 &amp; 検証</td><td>システム / ロボティクスエンジニア</td><td>QA、全チーム</td></tr>
+</table>
+
+<div class="callout">
+<strong>設計を確定するための未解決の課題:</strong>
+<ul>
+  <li>計算プラットフォーム(Jetson、Raspberry Pi、x86、マイクロコントローラ)?</li>
+  <li>ASR/TTSはオンボードかクラウドか?</li>
+  <li>主要シナリオ &amp; 距離(近接会話 vs. 遠方界 vs. 騒がしい公共空間)?</li>
+  <li>カスタムハードウェアを構築するか、既存のアレイを統合するか?</li>
+  <li>対象とする言語/アクセント、および音声データのプライバシー制約は?</li>
+</ul>
+</div>
+
+</div>
+
+<script>
+(function(){
+  function setLang(l){
+    document.body.classList.toggle('lang-en', l==='en');
+    document.body.classList.toggle('lang-ja', l==='ja');
+    document.documentElement.lang=l;
+    var en=document.getElementById('enBtn'), ja=document.getElementById('jaBtn');
+    if(en){ en.style.background=l==='en'?'#4f46e5':'transparent'; en.style.color=l==='en'?'#fff':'inherit'; }
+    if(ja){ ja.style.background=l==='ja'?'#4f46e5':'transparent'; ja.style.color=l==='ja'?'#fff':'inherit'; }
+    try{ localStorage.setItem('docs-lang', l); }catch(e){}
+  }
+  window.setLang=setLang;
+  var saved='en';
+  try{ saved=localStorage.getItem('docs-lang') || ((navigator.language||'').toLowerCase().indexOf('ja')===0?'ja':'en'); }catch(e){}
+  setLang(saved);
+})();
+</script>
+
+</body>
+</html>

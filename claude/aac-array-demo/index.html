@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AAC 4-Mic Array — Signal Flow Demo</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <h1>AAC 4-Mic Array · <span class="sub">Signal-Flow Simulator</span></h1>
+    <div class="transport">
+      <button id="startBtn" class="primary">▶ Start</button>
+      <label class="chk"><input type="checkbox" id="playChk" /> 🔊 Play output</label>
+      <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" title="volume" />
+      <span class="spacer"></span>
+      <a class="howlink" href="how-it-works.html">❓ How it works</a>
+      <button id="liveBtn" title="Connect the ReSpeaker XVF3800 USB array">🎤 Go Live</button>
+      <span id="status" class="status">sim</span>
+    </div>
+  </header>
+
+  <main>
+    <section id="controls"><!-- built by main.js --></section>
+
+    <section class="stage">
+      <div class="flow" id="flow"><!-- pipeline block lamps --></div>
+
+      <div class="grid">
+        <div class="panel doa">
+          <h3>DOA · SRP-PHAT</h3>
+          <canvas id="polar" width="340" height="340"></canvas>
+          <h3>Beam pattern · BF</h3>
+          <canvas id="beam" width="340" height="340"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Output spectrogram</h3>
+          <canvas id="spec" width="360" height="220"></canvas>
+          <h3>Output waveform</h3>
+          <canvas id="outscope" width="360" height="90"></canvas>
+          <h3>Mic 1 input</h3>
+          <canvas id="inscope" width="360" height="70"></canvas>
+        </div>
+      </div>
+
+      <div class="meters" id="meters"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
